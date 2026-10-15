@@ -16,7 +16,7 @@ Git root and working directory verified as /Users/matthewgoralczyk/BentoLabs/por
 | 7. Interface | Complete | 7 Vitest tests, strict TypeScript/build and 5 actual API Playwright tests pass; desktop/mobile both palettes inspected. |
 | 8. Evaluation | In progress | Metrics/provenance/failure tests pass; refreshed full benchmark pending shared ML lease (Casework evaluation owns it). |
 | 9. Capture gate | Complete | Validator tests and guide complete; no owned photographs supplied, no photo metrics. |
-| 10. Release verification | Next | Clean clone, process scripts and final review remain. |
+| 10. Release verification | In progress | Full verify passed:48 Python,7 UI,5 browser,1 restart; clean clone and final review pending. |
 
 ## Verification
 
@@ -45,3 +45,5 @@ Task 5: `uv run --extra features pytest -m "not real_model" -q` ->30 passed,1 de
 Task 4 exact checks: `uv run --extra features pytest -m "not real_model" -q` (23 passed), `uv run --extra features pytest tests/integration/test_feature_prepare.py -m real_model -q` (1 passed), strict Pyright and Ruff passed. Feature prepare succeeded under the shared lease; the child exited before token-checked release. Weight origin/checksum is in MODEL-CARD and model manifest. No owned photographs were used. Narrow local torchvision signature stubs cover its untyped public entry points; no missing-import exclusion.
 
 Task 9: capture validator RED missing module -> GREEN2tests, strict Pyright/Ruff pass. Covers rights/hash/group/session/fixture-source/staged-mark/ambiguous labels. No .runtime/data/captures directory exists. Preparation/evaluation preserve declared aligned-mask coordinates to avoid double warping.
+
+Task 10 verification: `uv sync --locked --extra features`, `npm --prefix web ci`, then `uv run python scripts/verify.py --fixture-only` exit0. All14 recorded commands exit0 in .runtime/verification.json. Actual restart/correction/interrupted worker test passes; shutdown waits for recorded child exit. .runtime/final-verification.log holds full output. No owned API/web processes remain and reserved ports are free. Clean clone not run yet.

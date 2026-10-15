@@ -1,6 +1,6 @@
 # Defect Lens evaluation design
 
-Status: planned evaluation. No results have been measured.
+Status: frozen evaluation tooling and metric/provenance tests implemented. Actual pretrained execution passed. The full measured fixture comparison is pending the shared ML lease; no owned-photo study has run. See [current evidence](docs/STATE.md).
 
 ## Baseline and split
 

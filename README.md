@@ -1,50 +1,59 @@
 # Defect Lens
 
-A visual inspection application that flags unusual regions on a photographed object and lets an operator accept, reject or review the result. The initial task is one tabletop object type with visible surface damage or missing components.
+A local visual inspection workbench for a matte gray tabletop plate with four dark fasteners. Upload an image, inspect appearance differences, review uncertainty and record a correction that preserves the original model decision.
 
-Status: proposed project. This repository currently contains a brief and evaluation design; it has no runnable application or measured model results.
+![Actual local inspection interface](docs/images/workbench.png)
 
-## What it demonstrates
+The account-free sample uses original procedural images. The default aligned difference method runs offline; a separate ResNet18 IMAGENET1K_V1 patch baseline executes actual pretrained inference when its public checkpoint and the machine lease are available. No owned photographs or industrial accuracy are claimed. This portfolio piece demonstrates vision integration, deployment constraints, evaluation and operator handoff.
 
-Visual features, anomaly detection, localisation, threshold calibration, image processing and practical inference reliability. The workflow is derived from [Roboflow's FDE requirements](https://jobs.ashbyhq.com/roboflow/444ee288-cb72-4751-b16d-67c27749e901/), especially real-world image variation and operational handoff.
+## Quickstart
 
-## First release
+From this repository's Git root, with uv, Python 3.12 and Node 24 available:
 
-Upload an image, inspect a defect heatmap and see a pass, review or fail decision. Record an operator correction with the image and model version. Provide a local batch mode and show processing failures explicitly. Start from recorded images; add a webcam only after the same pipeline is verified.
+```bash
+uv sync --locked --extra features
+npm --prefix web ci
+uv run defect-lens fixtures --output .runtime/data/fixtures --seed 20261015
+uv run defect-lens prepare --method difference --dataset .runtime/data/fixtures/manifest.json --output .runtime/models/demo-difference
+uv run python scripts/dev.py start --model .runtime/models/demo-difference
+```
 
-Use an aligned-image difference method as a simple baseline, then compare a pretrained visual encoder with patch-level nearest-neighbour anomaly scoring. Calibration must use validation examples. An anomaly heatmap is evidence of unusual appearance, not proof of a particular defect cause. Any text explanation must be tied to observable regions.
+Open http://127.0.0.1:5111 . Choose a PNG from .runtime/data/fixtures: filenames ending -0/-1 are good, -2 missing-fastener, -3 staged mark and -4 blurred quality examples in validation/test. Upload, inspect and save a correction. No model download, cloud key or paid compute is needed for this sample after dependency installation. This Mac's tested local exception is Node 26.7.0; CI targets 24.
 
-## Proposed design
+```bash
+uv run python scripts/dev.py status
+uv run python scripts/dev.py stop
+```
 
-Image input -> size and quality validation -> normalisation and region selection -> versioned feature extractor -> patch anomaly scores -> calibrated decision -> review queue and audit record. Python owns inference and the API; a small web interface owns image overlays and review. Persist image references and review state locally. Queue jobs with bounded memory and expose model readiness separately from server health.
+Reserved ports are API8111/web5111. An occupied port causes refusal; inspect its owner before taking action. The helper stops only processes whose recorded PID/start identity matches. All generated data, SQLite state, models and logs remain in ignored .runtime.
 
-Use owned photographs and a procedural fixture set for the redistributable demo. Split capture sessions and physical specimens before making augmentations. The optional [MVTec AD benchmark](https://www.mvtec.com/research-teaching/datasets/mvtec-ad) has non-commercial data terms and must remain separate from the permissively licensed demo. Do not bundle its images or assets under the code licence.
+## Architecture and evidence
 
-## Acceptance criteria
+React/TypeScript/Vite -> local FastAPI -> transactional SQLite queue -> one supervised CPU inference child -> versioned score/overlay -> append-only human review. Quality checks and ECC alignment are shared by both scorers. Calibration uses validation only; held-out samples never refit thresholds. Source, dependency, training/validation, artifact and configuration hashes define immutable model revisions. Corrections retain the original decision and revision.
 
-A clean checkout eventually runs the sample without cloud keys. A held-out report compares methods and shows false rejects and missed defects. Interrupted or invalid inputs reach a clear failure state. The operator can correct a decision and retrieve its model version. Throughput and memory are reported for the actual Mac; no untested industrial hardware claim is permitted.
+The API bounds upload size, queue capacity, retained storage, job time and worker RSS. A crash marks interrupted running work failed and retains queued work. No automatic retraining or per-job cancel is provided.
 
-## Scope limits
+- [Evaluation design and measured evidence](EVALUATION.md)
+- [Model card and limitations](docs/MODEL-CARD.md)
+- [Owned-photo status](reports/owned-capture-status.md) and [capture recipe](docs/CAPTURE-GUIDE.md)
+- [Engineering case study](docs/CASE-STUDY.md) and [two-minute walkthrough](docs/WALKTHROUGH.md)
+- [Runbook: setup, optional features, batch, quotas, lease and recovery](docs/RUNBOOK.md)
+- [Exported OpenAPI](docs/api/openapi.json), [specification](docs/SPEC.md) and [verification state](docs/STATE.md)
 
-One object type, file input and human review first. Industrial cameras, line controls, Jetson deployment and continuous retraining are later work. Human decisions are stored as feedback; they do not automatically become training labels or trigger model replacement.
+## Verification
 
-## Next implementation decision
+Stop owned servers before checks; then:
 
-Validate a small owned capture set and the aligned-image baseline before choosing the feature encoder. Freeze the object definition and acceptable false-reject cost in the project specification. See [evaluation design](EVALUATION.md).
+```bash
+npm --prefix web exec -- playwright install chromium
+uv run python scripts/verify.py --fixture-only
+uv run python scripts/clean_clone.py
+```
 
-## Licence
+The clean-clone check requires clean committed source and creates an independent local clone under .runtime. It tests strict Python/TypeScript, unit/integration checks, build, actual browser uploads/corrections and interrupted-worker restart. It performs no push or publication. Screen-reader testing has not been performed.
 
-Original code and documentation: [MIT](LICENSE). Third-party datasets, models and media retain their own terms.
+## Scope and licence
 
-## Implementation handoff
+One object, controlled overhead view, file input and human review. Webcam/industrial cameras, line controls, cloud hosting, authenticated teams and automatic training are outside v1. Procedural data cannot establish performance on photographs or uncontrolled production environments. No customer pilot or simulated time-saving claim is made.
 
-The v1 planning package fixes the tabletop object, runtime/API contracts, UI design and candidate ResNet18 patch baseline. Its evaluation compares candidates before any real-world quality claim; no implementation or measured result is implied by this plan.
-
-- [Copyable fork prompt](CHAT-HANDOFF.md)
-- [Project execution instructions](AGENTS.md)
-- [Full v1 specification](docs/SPEC.md)
-- [Ten-task native execution plan](docs/superpowers/plans/2026-10-15-v1.md)
-- [Current state and evidence gates](docs/STATE.md)
-- [Portfolio release standard](docs/RELEASE-STANDARD.md)
-
-All generated application data and model artifacts belong under this project's ignored `.runtime` directory. The default procedural image-difference sample will run without cloud keys or pretrained downloads. Owned-photo capture evidence remains a separate pending requirement.
+Original code/docs/procedural images: [MIT](LICENSE). Third-party model/data terms remain separate; no external benchmark assets or weights are redistributed. See [contributing](CONTRIBUTING.md), [security](SECURITY.md) and [changelog](CHANGELOG.md).
