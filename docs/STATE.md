@@ -12,8 +12,9 @@ Git root and working directory verified as /Users/matthewgoralczyk/BentoLabs/por
 | 3. Difference/calibration | Complete | 19 tests pass; good/pass, missing/fail, blur/review in actual pipeline test. |
 | 4. Pretrained/lease | Complete | 23 light tests and actual pretrained integration pass; 45 MiB checkpoint verified and local only. |
 | 5. Durable workflow | Complete | 30 light tests pass; actual child inference, timeout/restart budget, memory monitor, atomic rollback and corrections. |
-| 6. API/batch | Next | HTTP workflow pending. |
-| 7-10 | Pending | UI, evaluation and release checks remain. |
+| 6. API/batch | Complete | Actual five-image HTTP batch: 5 succeeded,0 failed. Upload/replay/review/queue tests and generated contract checks pass. |
+| 7. Interface | Next | Actual browser workflow pending. |
+| 8-10 | Pending | Evaluation and release checks remain. |
 
 ## Verification
 
@@ -31,7 +32,9 @@ Procedural software workflow: in progress. Actual pretrained execution: passed r
 
 ## Next action
 
-Task 6: bounded HTTP upload, polling, artifacts, review and batch.
+Task 7: accessible operator UI and actual browser workflow.
+
+Task 6: focused HTTP tests passed (upload/replay/stale revision/origin, chunked and image caps, two-upload gate, 33rd job, review conflicts), generated OpenAPI/TypeScript consistency checked; strict Pyright/Ruff pass. Real server API8111 batch command submitted5/succeeded5/failed0, JSONL at .runtime/outputs/batch-task6.jsonl. Normalized duplicate/rejected artifacts are cleaned; originals never stored beyond request. Body bytes are capped before multipart parsing, whose bounded memory spool cannot spill into shared temporary storage.
 
 Task 5: `uv run --extra features pytest -m "not real_model" -q` ->30 passed,1 deselected; strict Pyright and Ruff pass. Spawned real difference worker completes exactly one inspection; timeout kills/join, one restart then degraded; 1 MiB test ceiling exercises RSS recovery. Competing admission respects one-slot capacity; a simulated post-artifact/pre-commit crash rolls back and startup marks INTERRUPTED. Correction replay/version conflict and reopen persistence pass. Server lock refuses a second owner. No feature worker remains resident.
 

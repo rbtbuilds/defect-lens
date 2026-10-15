@@ -11,8 +11,10 @@ from defect_lens.models import prepare_model
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Local visual inspection")
-    parser.add_argument("command", choices=["serve", "fixtures", "prepare"])
+    parser.add_argument("command", choices=["serve", "fixtures", "prepare", "batch"])
     parser.add_argument("--model", type=Path)
+    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--api", default="http://127.0.0.1:8111")
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--method", choices=["difference", "resnet18_patch"], default="difference")
     parser.add_argument("--output", type=Path, default=Path(".runtime/data/fixtures"))
@@ -29,4 +31,12 @@ def main() -> None:
             parser.error("prepare requires --dataset")
         print(prepare_model(args.dataset, args.method, args.output).model_dump_json(indent=2))
         return
+    if args.command == "batch":
+        from defect_lens.batch import run_batch
+
+        if args.manifest is None:
+            parser.error("batch requires --manifest")
+        summary = run_batch(args.manifest, args.api, args.output)
+        print(summary)
+        raise SystemExit(summary.exit_code)
     uvicorn.run(create_app(Settings(Path.cwd(), args.model)), host=args.host, port=args.port)
