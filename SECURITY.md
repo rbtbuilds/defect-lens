@@ -6,4 +6,4 @@ Image/body/dimension caps, a bounded queue, deadlines, worker RSS monitoring, co
 
 Keep originals, database, local aliases/notes, logs and ownership records private. An operator alias is not authenticated identity. Origin checking is useful for a local browser flow and does not replace authentication or a server authorization model.
 
-If you find a vulnerability, preserve a minimal local reproduction and share it privately with the repository owner through a contact you already know. No dedicated reporting address has been verified. Do not publish secrets, private images or exploit details in a public issue.
+Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/rbtbuilds/defect-lens/security/advisories/new), which is enabled for this repository. Include the affected revision, a minimal reproduction and the expected security boundary. Do not post secrets, private images or exploit details in a public issue.

@@ -16,11 +16,11 @@ The reviewer reproduced both defects independently. The implementer then added f
 
 The final local command `uv run python scripts/verify.py --fixture-only` passed all 15 steps: Ruff, formatting, strict Pyright including tests/scripts, 68 Python unit/integration cases, frontend lint, strict TypeScript, 10 Vitest cases, the production build, fixture/model preparation, six actual-API browser cases and an actual interrupted-worker/restart case. One real-model test was explicitly deselected.
 
-The minimum-dependency README setup was exercised with torch/torchvision absent; its five existing browser scenarios passed. A fresh screenshot shows an actual missing-fastener overlay and saved correction. Relative Markdown links were checked. A targeted scan of all 242 pre-publication historical blobs found no matching credential patterns or forbidden generated/model paths; it was not a comprehensive secret-scanner certification.
+The minimum-dependency README setup was exercised with torch/torchvision absent; its five existing browser scenarios passed. A fresh screenshot shows an actual missing-fastener overlay and saved correction. Relative Markdown links were checked. A targeted scan of 265 historical blobs found no matching credential patterns or forbidden generated/model paths; it was not a comprehensive secret-scanner certification.
 
 The reviewer recalculated metrics from all 180 published prediction rows and checked both frozen inference-source hashes against the implementation. No inference or dependency identity changed in this publication pass. The existing report remains frozen.
 
-Full output stays local in `.runtime/publication-verification.log`, `.runtime/publication-eval-red.log`, `.runtime/publication-ui-red.log` and `.runtime/publication-browser-green.log`. Independent clone and hosted CI outcomes are recorded in [STATE.md](STATE.md).
+Full output stays local in `.runtime/publication-verification.log`, `.runtime/publication-eval-red.log`, `.runtime/publication-ui-red.log` and `.runtime/publication-browser-green.log`. The independent clone passed on implementation commit 5164122; [hosted Ubuntu/Node 24 CI](https://github.com/rbtbuilds/defect-lens/actions/runs/38813660529) passed on commit 00d674d5476539458d875957d5299b0beab06095. Full provenance is recorded in [STATE.md](STATE.md).
 
 ## Review boundaries
 

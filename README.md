@@ -1,5 +1,7 @@
 # Defect Lens
 
+[![Checks](https://github.com/rbtbuilds/defect-lens/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rbtbuilds/defect-lens/actions/workflows/ci.yml)
+
 A local computer vision app for inspecting a tabletop assembly. Upload an image, compare it with a known-good reference, inspect the anomaly overlay and record a human correction without losing the original result.
 
 Built with **Python, FastAPI, SQLite, OpenCV, PyTorch and React/TypeScript**. Runs on CPU; the default demo needs no account, API key or model download.
@@ -55,7 +57,7 @@ uv run python scripts/dev.py status
 uv run python scripts/dev.py stop
 ```
 
-The [runbook](docs/RUNBOOK.md) covers optional pretrained setup, batch inspection, storage limits and recovery. The tested local environment used Node 26.7.0 as a documented compatibility exception; CI targets Node 24.
+The [runbook](docs/RUNBOOK.md) covers optional pretrained setup, batch inspection, storage limits and recovery. Hosted CI verifies Ubuntu with Node 24. The benchmark Mac used Node 26.7.0 as a tested local compatibility exception.
 
 ## Engineering choices
 
