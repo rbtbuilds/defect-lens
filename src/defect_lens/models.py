@@ -1,7 +1,9 @@
 import hashlib
 import json
 import re
+import shutil
 import subprocess
+import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -93,7 +95,13 @@ class ModelBundle:
         return prepared, result, decide(result.score, self.manifest.calibration, result.reasons)
 
 
-def load_model(directory: Path) -> ModelBundle:
+def read_model_manifest(directory: Path) -> ModelManifest:
+    return ModelManifest.model_validate_json(
+        (resolve_model(directory) / "manifest.json").read_bytes()
+    )
+
+
+def load_model(directory: Path, lease_token: str | None = None) -> ModelBundle:
     root = resolve_model(directory)
     manifest = ModelManifest.model_validate_json((root / "manifest.json").read_bytes())
     identity = manifest.model_dump(exclude={"revision"})
@@ -103,9 +111,22 @@ def load_model(directory: Path) -> ModelBundle:
         if file_hash(contained(root, relative)) != expected:
             raise ModelIntegrityError("model artifact checksum mismatch")
     anchor = np.asarray(np.load(root / "anchor.npy", allow_pickle=False), dtype=np.uint8)
-    scorer = DifferenceScorer(
-        np.asarray(np.load(root / "reference.npy", allow_pickle=False), dtype=np.uint8)
-    )
+    scorer: Scorer
+    if manifest.method == "difference":
+        scorer = DifferenceScorer(
+            np.asarray(np.load(root / "reference.npy", allow_pickle=False), dtype=np.uint8)
+        )
+    else:
+        from defect_lens.lease import DEFAULT_LEASE, LeaseBusy, token_matches
+
+        if lease_token is None or not token_matches(DEFAULT_LEASE, lease_token):
+            raise LeaseBusy("Feature loading requires the owned machine lease")
+        from defect_lens.inference.patch import PatchScorer, ResNetEncoder
+
+        scorer = PatchScorer(
+            np.asarray(np.load(root / "bank.npy", allow_pickle=False), dtype=np.float32),
+            ResNetEncoder(root / "weights.pth"),
+        )
     return ModelBundle(manifest, anchor, scorer)
 
 
@@ -120,7 +141,30 @@ def subset_hash(samples: Sequence[SampleRecord]) -> str:
     return hashlib.sha256(canonical([s.model_dump() for s in samples])).hexdigest()
 
 
-def prepare_model(dataset: Path, method: Method, output: Path) -> ModelManifest:
+def prepare_model(
+    dataset: Path, method: Method, output: Path, *, _lease_token: str | None = None
+) -> ModelManifest:
+    if method == "resnet18_patch" and _lease_token is None:
+        from defect_lens.lease import MachineLease
+
+        with MachineLease().acquire("pretrained feature preparation") as handle:
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "defect_lens.feature_runner",
+                    str(dataset.resolve()),
+                    str(output.resolve()),
+                    handle.token,
+                ],
+                check=True,
+            )
+        return read_model_manifest(output)
+    if method == "resnet18_patch":
+        from defect_lens.lease import DEFAULT_LEASE, LeaseBusy, token_matches
+
+        if _lease_token is None or not token_matches(DEFAULT_LEASE, _lease_token):
+            raise LeaseBusy("Feature preparation requires owned lease")
     all_data = DatasetManifest.model_validate_json(dataset.read_bytes())
     selected = all_data.model_copy(
         update={"samples": [s for s in all_data.samples if s.split != "test"]}
@@ -136,9 +180,15 @@ def prepare_model(dataset: Path, method: Method, output: Path) -> ModelManifest:
         frame = prepare_frame(decode_image(path), anchor, inspect_input(path))
         if not frame.quality_reasons:
             aligned.append(frame.rgb)
-    if method != "difference":
-        raise ValueError("feature method not prepared")
-    scorer = fit_difference(aligned)
+    scorer: Scorer
+    weights: Path | None = None
+    if method == "difference":
+        scorer = fit_difference(aligned)
+    else:
+        from defect_lens.inference.patch import ResNetEncoder, download_weights, fit_patch
+
+        weights = download_weights(output.parent / "weights")
+        scorer = fit_patch(aligned, ResNetEncoder(weights), all_data.seed or 0)
     labelled: list[LabelledScore] = []
     validation = [s for s in selected.samples if s.split == "validation"]
     for sample in validation:
@@ -175,7 +225,13 @@ def prepare_model(dataset: Path, method: Method, output: Path) -> ModelManifest:
     stage = output / f".stage-{uuid4().hex}"
     stage.mkdir()
     np.save(stage / "anchor.npy", anchor, allow_pickle=False)
-    np.save(stage / "reference.npy", scorer.reference, allow_pickle=False)
+    if isinstance(scorer, DifferenceScorer):
+        np.save(stage / "reference.npy", scorer.reference, allow_pickle=False)
+    else:
+        if weights is None:
+            raise ValueError("Unexpected scorer")
+        np.save(stage / "bank.npy", scorer.bank, allow_pickle=False)
+        shutil.copyfile(weights, stage / "weights.pth")
     source_root = Path(__file__).parent
     source_paths = [
         *sorted((source_root / "inference").glob("*.py")),
@@ -228,7 +284,12 @@ def prepare_model(dataset: Path, method: Method, output: Path) -> ModelManifest:
     target = output / "revisions" / revision
     target.parent.mkdir(exist_ok=True)
     if target.exists():
-        load_model(target)
+        if method == "difference":
+            load_model(target)
+        else:
+            for relative, expected in manifest.artifact_hashes.items():
+                if file_hash(contained(target, relative)) != expected:
+                    raise ModelIntegrityError("Existing model artifact changed")
         for path in stage.iterdir():
             path.unlink()
         stage.rmdir()

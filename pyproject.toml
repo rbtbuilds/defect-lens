@@ -32,7 +32,8 @@ typeCheckingMode = "strict"
 pythonVersion = "3.12"
 venvPath = "."
 venv = ".venv"
-include = ["src", "tests", "scripts"]
+include = ["src", "tests", "scripts", "typings"]
+stubPath = "typings"
 
 [tool.ruff]
 target-version = "py312"
