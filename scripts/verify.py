@@ -29,6 +29,7 @@ def verify() -> None:
             "not real_model",
             "-q",
         ],
+        ["npm", "--prefix", "web", "run", "lint"],
         ["npm", "--prefix", "web", "run", "typecheck"],
         ["npm", "--prefix", "web", "run", "test", "--", "--run"],
         ["npm", "--prefix", "web", "run", "build"],

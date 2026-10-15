@@ -38,7 +38,7 @@ A feature server with a busy lease still serves health/history but remains unrea
 
 ## Bounds and storage
 
-At most two uploads and 32 queued/running jobs are admitted. The body cap is 9 MiB before multipart parsing; one PNG/JPEG image is capped at 8 MiB, 128-4096 pixels per side and 8 million pixels. Animation, corruption and unsupported formats fail explicitly. Filenames are never paths. Original request bytes are removed; normalized images and bounded PNG artifacts remain local.
+At most two uploads and 32 queued/running jobs are admitted. The body cap is 9 MiB before multipart parsing; one PNG/JPEG image is capped at 8 MiB, 128-4096 pixels per side and 8 million pixels. Animation, undecodable pixel data and unsupported formats fail explicitly. The decoder normalizes pixels rather than certifying container structure; some PNGs with missing trailing metadata remain decodable. Filenames are never paths. Original request bytes are removed; normalized images and bounded PNG artifacts remain local.
 
 A job has 30 seconds after dispatch, monitored every 100 ms, with a 1,536 MiB worker RSS ceiling. Admission reserves 1 MiB per job, limits total retained bytes to 512 MiB and jobs to 10,000. Completion cannot exceed its reservation. STORAGE_LIMIT is a quota error, not a cleanup request. There is no automatic retention deletion. Back up or archive deliberately before deciding what to remove. Orphan artifact folders from a crash remain available for inspection and count toward retained storage when the running job is recovered; never run broad cleanup commands.
 
@@ -54,7 +54,7 @@ uv run --extra features defect-lens benchmark --prepare --dataset .runtime/data/
 uv run defect-lens export-report --input .runtime/outputs/fixture-evaluation --output reports/fixture-v1
 ```
 
-The --prepare benchmark option refreshes selected models and compares them under one lease, avoiding a release/reacquire gap. Model runner process groups contain only their own descendants; interrupted runners stop them before release, and a cleanup failure retains the lease for manual inspection. Choose new output directories for a new benchmark/curated revision. Never overwrite frozen evidence. Reports include actual failures, thresholds, source/model/lock/data hashes, hardware, cold/warm and stage timings, process-tree RSS and separate operational metrics. API timing uses actual ASGI requests and a child worker, excluding TCP. Pretrained execution on procedural inputs is not owned-photo validation. Follow CAPTURE-GUIDE for a separate photographic study.
+The --prepare benchmark option refreshes selected models and compares them under one lease, avoiding a release/reacquire gap. Model runner process groups contain only their own descendants; interrupted runners stop them before release, and a cleanup failure retains the lease for manual inspection. Choose new output directories for a new benchmark/curated revision. Never overwrite frozen evidence. An API timing failure preserves the pipeline rows, records an unavailable reason and makes the aggregate report incomplete; the benchmark exits unsuccessfully. Reports include actual failures, thresholds, source/model/lock/data hashes, hardware, cold/warm and stage timings, process-tree RSS and separate operational metrics. API timing uses actual ASGI requests and a child worker, excluding TCP. Pretrained execution on procedural inputs is not owned-photo validation. Follow CAPTURE-GUIDE for a separate photographic study.
 
 With both owned servers stopped:
 

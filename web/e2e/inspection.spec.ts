@@ -129,3 +129,63 @@ for (const theme of ["light", "dark"] as const)
       });
     });
   }
+
+test("restores a linked inspection beyond the first page and rejects a missing link", async ({
+  page,
+}) => {
+  const metadata = (await (await page.request.get("/api/models")).json()) as {
+    model_revision: string;
+    data_mode: string;
+  };
+  const sample = manifest.samples.find(
+    (s) => s.split === "test" && s.defect_kind === "missing_fastener",
+  );
+  if (!sample) throw new Error("Missing defect fixture");
+  const buffer = await readFile(
+    path.join(root, ".runtime/data/fixtures", sample.image_path),
+  );
+  const submit = async () => {
+    const response = await page.request.post("/api/jobs", {
+      headers: { "Idempotency-Key": crypto.randomUUID() },
+      multipart: {
+        image: { name: "fixture.png", mimeType: "image/png", buffer },
+        model_revision: metadata.model_revision,
+        data_mode: metadata.data_mode,
+      },
+    });
+    expect(response.status()).toBe(202);
+    return (await response.json()) as { id: string };
+  };
+  const linked = await submit();
+  await expect
+    .poll(async () => {
+      const response = await page.request.get(`/api/jobs/${linked.id}`);
+      return ((await response.json()) as { status: string }).status;
+    })
+    .toBe("succeeded");
+  for (let count = 0; count < 31; count++) await submit();
+  const latest = (await (
+    await page.request.get("/api/jobs?limit=30")
+  ).json()) as {
+    items: Array<{ id: string }>;
+  };
+  expect(latest.items.some((job) => job.id === linked.id)).toBe(false);
+  await page.goto(`/#${linked.id}`);
+  await expect(page.getByTestId("result-job")).toHaveText(
+    new RegExp(linked.id.slice(0, 8)),
+  );
+  await expect(
+    page.getByRole("heading", { name: "Inspection result" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { pressed: true })).toContainText(
+    linked.id.slice(0, 8),
+  );
+  await page.reload();
+  await expect(page.getByTestId("result-job")).toHaveText(
+    new RegExp(linked.id.slice(0, 8)),
+  );
+  await page.goto(`/#${crypto.randomUUID()}`);
+  await page.reload();
+  await expect(page.getByRole("alert")).toContainText("NOT_FOUND");
+  await expect(page.getByTestId("result-job")).toHaveCount(0);
+});

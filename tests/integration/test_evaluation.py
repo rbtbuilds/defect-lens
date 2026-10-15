@@ -161,3 +161,74 @@ def test_comparison_can_borrow_an_owned_lease_without_releasing_it(tmp_path: Pat
         )
         assert report.complete and lease.exists()
     assert not lease.exists()
+
+
+@pytest.mark.parametrize("all_corrupt", [False, True])
+def test_api_timing_failure_preserves_pipeline_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, all_corrupt: bool
+) -> None:
+    from defect_lens import evaluation
+    from defect_lens.manifests import file_hash
+
+    data = make_dataset(tmp_path / "data")
+    model = prepare_model(tmp_path / "data/manifest.json", "difference", tmp_path / "model")
+    samples = [sample for sample in data.samples if sample.split == "test"]
+    for sample in samples if all_corrupt else samples[-1:]:
+        path = tmp_path / "data" / sample.image_path
+        path.write_bytes(b"corrupt image with declared hash")
+        sample.image_sha256 = file_hash(path)
+    lease = tmp_path / "lease"
+    monkeypatch.setattr(evaluation, "DEFAULT_LEASE", lease)
+    report = evaluate(
+        data,
+        [model],
+        tmp_path / "report",
+        dataset_root=tmp_path / "data",
+        model_directories=[tmp_path / "model"],
+        lease_path=lease,
+    )
+    assert not report.complete
+    assert len(report.methods[0].rows) == 15
+    assert report.methods[0].metrics.failures == (15 if all_corrupt else 1)
+    assert report.methods[0].api_timing_unavailable_reason is not None
+    assert report.methods[0].api_timings_ms == []
+    assert report.unavailable_reasons
+    saved = evaluation.EvaluationReport.model_validate_json(
+        (tmp_path / "report/report.json").read_bytes()
+    )
+    assert not saved.complete and len(saved.methods[0].rows) == 15
+    assert not lease.exists()
+
+
+def test_api_only_failure_marks_comparison_incomplete(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import subprocess
+    from collections.abc import Sequence
+
+    from defect_lens import evaluation
+
+    data = make_dataset(tmp_path / "data")
+    model = prepare_model(tmp_path / "data/manifest.json", "difference", tmp_path / "model")
+    original_runner = evaluation.run_model_process
+
+    def fail_api(command: Sequence[str]) -> None:
+        if "--api" in command:
+            raise subprocess.CalledProcessError(1, list(command))
+        original_runner(command)
+
+    lease = tmp_path / "lease"
+    monkeypatch.setattr(evaluation, "DEFAULT_LEASE", lease)
+    monkeypatch.setattr(evaluation, "run_model_process", fail_api)
+    report = evaluate(
+        data,
+        [model],
+        tmp_path / "report",
+        dataset_root=tmp_path / "data",
+        model_directories=[tmp_path / "model"],
+        lease_path=lease,
+    )
+    assert report.methods[0].metrics.failures == 0
+    assert not report.complete
+    assert report.methods[0].api_timing_unavailable_reason is not None
+    assert (tmp_path / "report/report.json").is_file()

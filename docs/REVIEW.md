@@ -1,6 +1,6 @@
-# Final source review and regression evidence
+# Original implementation review
 
-One fresh-context reviewer inspected a9a731f..47d97ae. The initial verdict was NEEDS WORK: eight Important findings, no established Critical finding and no Minor findings. The implementer accepted all eight and made one fix pass; no second review is represented as having occurred.
+At original implementation acceptance, one fresh-context reviewer inspected a9a731f..47d97ae. The initial verdict was NEEDS WORK: eight Important findings, no established Critical finding and no Minor findings. The implementer accepted all eight and made one fix pass; no second review occurred within that execution run. A later user-requested publication review is recorded in [PUBLICATION-REVIEW.md](PUBLICATION-REVIEW.md).
 
 | Finding | Fix | Regression |
 | --- | --- | --- |

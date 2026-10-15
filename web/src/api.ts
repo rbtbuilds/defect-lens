@@ -53,7 +53,7 @@ export const api = {
       { signal },
     ),
   job: (id: string, signal?: AbortSignal) =>
-    request<Job>(`/api/jobs/${id}`, { signal }),
+    request<Job>(`/api/jobs/${encodeURIComponent(id)}`, { signal }),
   inspection: (id: string, signal?: AbortSignal) =>
     request<Inspection>(`/api/inspections/${id}`, { signal }),
   reviews: (id: string, signal?: AbortSignal) =>

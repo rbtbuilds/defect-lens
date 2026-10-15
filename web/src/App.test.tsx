@@ -150,3 +150,55 @@ it("ignores an old correction refresh after selecting another inspection", async
   ).toHaveAttribute("src", "/job-b.png");
   expect(screen.getByTestId("result-job")).toHaveTextContent("job-b");
 });
+
+it("restores an older linked job outside the newest page", async () => {
+  const oldId = "11111111-1111-4111-8111-111111111111";
+  const newId = "22222222-2222-4222-8222-222222222222";
+  const job = (id: string): Job => ({
+    id,
+    status: "failed",
+    model_revision: "a".repeat(64),
+    data_mode: "procedural",
+    created_at: "2026-10-15T10:00:00Z",
+    started_at: null,
+    finished_at: null,
+    inspection_id: null,
+    error: {
+      code: "TIMEOUT",
+      message: `Processing ${id} failed`,
+      retryable: false,
+      request_id: "",
+      details: {},
+    },
+  });
+  location.hash = oldId;
+  vi.mocked(api.jobs).mockResolvedValue({
+    items: [job(newId)],
+    next_cursor: newId,
+  });
+  vi.mocked(api.job).mockImplementation(async (id) => job(id));
+  render(<App />);
+  await waitFor(() =>
+    expect(screen.getByTestId("result-job")).toHaveTextContent("11111111"),
+  );
+  expect(screen.getByRole("button", { pressed: true })).toHaveTextContent(
+    "11111111",
+  );
+  expect(api.job).toHaveBeenCalledWith(oldId, expect.any(AbortSignal));
+});
+
+it("shows a missing linked job without substituting a different inspection", async () => {
+  const { ApiError } = await import("./api");
+  location.hash = "33333333-3333-4333-8333-333333333333";
+  vi.mocked(api.job).mockRejectedValue(
+    new ApiError("NOT_FOUND", "Job not found"),
+  );
+  render(<App />);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "NOT_FOUND: Job not found",
+  );
+  expect(screen.queryByTestId("result-job")).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { pressed: true }),
+  ).not.toBeInTheDocument();
+});

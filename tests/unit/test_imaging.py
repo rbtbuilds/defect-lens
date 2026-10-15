@@ -55,3 +55,14 @@ def test_animation_is_rejected_and_exif_is_transposed(tmp_path: Path) -> None:
     path = tmp_path / "rotated.jpg"
     image.save(path, exif=exif)
     assert int(decode_image(path)[220, 220, 0]) > 240
+
+
+@pytest.mark.parametrize("removed_bytes", [12, 16])
+def test_decodable_png_with_missing_trailing_structure_is_normalized(
+    tmp_path: Path, removed_bytes: int
+) -> None:
+    path = tmp_path / "recoverable.png"
+    Image.new("RGB", (256, 256), (70, 80, 90)).save(path)
+    expected = decode_image(path)
+    path.write_bytes(path.read_bytes()[:-removed_bytes])
+    assert np.array_equal(decode_image(path), expected)

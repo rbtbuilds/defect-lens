@@ -199,6 +199,7 @@ class MethodReport(Contract):
     timing_unavailable_reason: str | None = None
     peak_combined_rss_bytes: int = 0
     api_timings_ms: list[float] = Field(default_factory=lambda: list[float]())
+    api_timing_unavailable_reason: str | None = None
     api_timing_note: str = "Actual ASGI HTTP transport including queue, decode, alignment, inference and artifact storage; excludes TCP"
     timing_method: str = "perf_counter_ns; one cold load+first inference; three excluded warmups; all held-out samples timed including decode/alignment/scoring/PNG storage"
     localization_note: str = "Mean per-image pixel AP and IoU over known defect masks, in aligned coordinates; absent masks yield null"
@@ -446,10 +447,15 @@ def evaluate(
                 )
                 # API timing runs in a separate process after the pipeline model exits.
                 if lease_path == DEFAULT_LEASE:
-                    run_model_process([*command, "--api"])
-                    report.api_timings_ms = json.loads(
-                        (destination / "api-timing.json").read_bytes()
-                    )
+                    try:
+                        run_model_process([*command, "--api"])
+                        report.api_timings_ms = json.loads(
+                            (destination / "api-timing.json").read_bytes()
+                        )
+                    except (subprocess.CalledProcessError, OSError, ValueError):
+                        report.api_timing_unavailable_reason = (
+                            "Actual ASGI timing failed; pipeline outcomes are retained"
+                        )
                 else:
                     report.api_timing_note = "Not run in this light integration test; production benchmark uses actual ASGI flow"
                 report.peak_combined_rss_bytes = peak
@@ -460,10 +466,16 @@ def evaluate(
     report = EvaluationReport(
         claim_level="fixture" if dataset.mode == "procedural" else "owned_capture",
         data_mode=dataset.mode,
-        complete=all(r.error is None for method in methods for r in method.rows),
+        complete=all(r.error is None for method in methods for r in method.rows)
+        and all(method.api_timing_unavailable_reason is None for method in methods),
         manifest_sha256=hashlib.sha256(canonical(dataset.model_dump())).hexdigest(),
         environment=environment(),
         methods=methods,
+        unavailable_reasons=[
+            f"{method.model.method}: {method.api_timing_unavailable_reason}"
+            for method in methods
+            if method.api_timing_unavailable_reason is not None
+        ],
     )
     (output / "report.json").write_text(report.model_dump_json(indent=2) + "\n")
     (output / "environment.json").write_text(json.dumps(report.environment, indent=2) + "\n")

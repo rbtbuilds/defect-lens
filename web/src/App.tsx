@@ -13,6 +13,9 @@ export default function App() {
   const [model, setModel] = useState<ModelMetadata | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selected, setSelected] = useState<Job | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => location.hash.slice(1) || null,
+  );
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -29,16 +32,17 @@ export default function App() {
           ]);
           if (signal.aborted) return false;
           setModel(metadata);
-          setJobs(list.items);
+          setJobs((current) => {
+            const retained = current.find(
+              (job) => job.id === location.hash.slice(1),
+            );
+            return retained && !list.items.some((job) => job.id === retained.id)
+              ? [retained, ...list.items]
+              : list.items;
+          });
           setCursor(list.next_cursor);
           setError("");
-          setSelected(
-            (current) =>
-              current ??
-              list.items.find((job) => job.id === location.hash.slice(1)) ??
-              list.items[0] ??
-              null,
-          );
+          setSelectedId((current) => current ?? list.items[0]?.id ?? null);
           return (
             metadata.status === "loading" ||
             list.items.some(
@@ -50,7 +54,6 @@ export default function App() {
       ),
     [epoch],
   );
-  const selectedId = selected?.id;
   useEffect(() => {
     if (!selectedId) return;
     return startPolling(
@@ -60,7 +63,9 @@ export default function App() {
         setSelected(job);
         setAnnouncement(`Inspection ${job.id.slice(0, 8)}: ${job.status}`);
         setJobs((current) =>
-          current.map((item) => (item.id === job.id ? job : item)),
+          current.some((item) => item.id === job.id)
+            ? current.map((item) => (item.id === job.id ? job : item))
+            : [job, ...current],
         );
         if (job.inspection_id) {
           const result = await api.inspection(job.inspection_id, signal);
@@ -72,9 +77,11 @@ export default function App() {
     );
   }, [selectedId]);
   function choose(job: Job) {
-    if (selected?.id === job.id) return;
+    if (selectedId === job.id) return;
     setInspection(null);
     setSelected(job);
+    setSelectedId(job.id);
+    setError("");
     location.hash = job.id;
   }
   async function submit(file: File) {

@@ -1,63 +1,98 @@
 # Defect Lens
 
-A local visual inspection workbench for a matte gray tabletop plate with four dark fasteners. Upload an image, inspect appearance differences, review uncertainty and record a correction that preserves the original model decision.
+A local computer vision app for inspecting a tabletop assembly. Upload an image, compare it with a known-good reference, inspect the anomaly overlay and record a human correction without losing the original result.
 
-![Actual local inspection interface](docs/images/workbench.png)
+Built with **Python, FastAPI, SQLite, OpenCV, PyTorch and React/TypeScript**. Runs on CPU; the default demo needs no account, API key or model download.
 
-The account-free sample uses original procedural images. The default aligned difference method runs offline; a separate ResNet18 IMAGENET1K_V1 patch baseline executes actual pretrained inference when its public checkpoint and the machine lease are available. No owned photographs or industrial accuracy are claimed. This portfolio piece demonstrates vision integration, deployment constraints, evaluation and operator handoff.
+![Defect Lens localizing a missing fastener with an anomaly overlay and a saved operator review](docs/images/workbench.png)
 
-## Quickstart
+## What it does
 
-From this repository's Git root, with uv, Python 3.12 and Node 24 available:
+The sample object is a gray plate with four dark fasteners. Defect Lens checks for a missing fastener or an unexpected surface mark. A blurred or badly framed image goes to review instead of receiving a confident pass or fail.
+
+Two methods share the same alignment and evaluation pipeline:
+
+- **Aligned difference:** compares an image with a median reference built from good training images.
+- **Pretrained patch features:** compares ResNet18 feature vectors with a bank of good examples.
+
+Each inspection keeps its model revision, score, images and explanation. Corrections are versioned separately, so the original decision remains available after a restart.
+
+## Results
+
+The comparison used 90 held-out **procedural images** per method: 36 good, 36 with known defects and 18 ambiguous. Both methods detected all 36 labelled defects with no false rejects. The simpler difference method needed fewer reviews and localized the generated defects more accurately.
+
+| Measure | Aligned difference | ResNet18 patch features |
+| --- | ---: | ---: |
+| Images requiring review | 21/90 (23.3%) | 54/90 (60.0%) |
+| Mean defect-mask intersection over union | 1.000 | 0.213 |
+| Mean per-image pixel average precision | 1.000 | 0.293 |
+| Warm pipeline latency, 95th percentile | 16.51 ms | 32.29 ms |
+
+Measured on an Apple M5 Pro with 24 GiB RAM, using CPU inference. Pipeline latency includes decoding, alignment, scoring and artifact storage. The [full report](reports/fixture-v1/report.md) includes raw predictions, split and model hashes, memory measurements and timing scope.
+
+These images are deliberately simple. Actual pretrained inference has run, but **no photographic accuracy study has been performed**. The results support the reproducible demo; they do not establish industrial inspection performance.
+
+## Run locally
+
+Requires uv, Python 3.12 and Node 24. Process management targets macOS and Linux.
 
 ```bash
-uv sync --locked --extra features
+git clone https://github.com/rbtbuilds/defect-lens.git
+cd defect-lens
+uv sync --locked
 npm --prefix web ci
 uv run defect-lens fixtures --output .runtime/data/fixtures --seed 20261015
 uv run defect-lens prepare --method difference --dataset .runtime/data/fixtures/manifest.json --output .runtime/models/demo-difference
 uv run python scripts/dev.py start --model .runtime/models/demo-difference
 ```
 
-Open http://127.0.0.1:5111 . Choose a PNG from .runtime/data/fixtures: filenames ending -0/-1 are good, -2 missing-fastener, -3 staged mark and -4 blurred quality examples in validation/test. Upload, inspect and save a correction. No model download, cloud key or paid compute is needed for this sample after dependency installation. This Mac's tested local exception is Node 26.7.0; CI targets 24.
+Open **http://127.0.0.1:5111**. Upload a PNG from `.runtime/data/fixtures`, inspect the result, then save a correction. Validation/test filenames ending in `-0` or `-1` are good views; `-2` is a missing fastener, `-3` a staged mark and `-4` a blurred image.
+
+The API uses port 8111 and the browser app uses 5111. Both bind to loopback. Generated images, model files, logs and the database stay in ignored `.runtime/` storage.
 
 ```bash
 uv run python scripts/dev.py status
 uv run python scripts/dev.py stop
 ```
 
-Reserved ports are API8111/web5111. An occupied port causes refusal; inspect its owner before taking action. The helper stops only processes whose recorded PID/start identity matches. All generated data, SQLite state, models and logs remain in ignored .runtime.
+The [runbook](docs/RUNBOOK.md) covers optional pretrained setup, batch inspection, storage limits and recovery. The tested local environment used Node 26.7.0 as a documented compatibility exception; CI targets Node 24.
 
-## Architecture and evidence
+## Engineering choices
 
-React/TypeScript/Vite -> local FastAPI -> transactional SQLite queue -> one supervised CPU inference child -> versioned score/overlay -> append-only human review. Quality checks and ECC alignment are shared by both scorers. Calibration uses validation only; held-out samples never refit thresholds. Source, dependency, training/validation, artifact and configuration hashes define immutable model revisions. Corrections retain the original decision and revision.
+- **Compare against a simple baseline.** Validation freezes the thresholds before the held-out comparison. The measured review burden supports using aligned difference as the default.
+- **Preserve decisions and feedback.** SQLite transactions protect job admission, result completion and append-only corrections. Retries reuse their request identity; stale correction versions fail explicitly.
+- **Bound the work.** One supervised inference child has a 30-second deadline, a memory ceiling and one restart budget. Upload size, queue length and retained storage are capped.
+- **Make results traceable.** Model revisions include source, dependency, data, configuration and artifact hashes. A changed inference implementation requires a new prepared revision.
 
-The API bounds upload size, queue capacity, retained storage, job time and worker RSS. A crash marks interrupted running work failed and retains queued work. No automatic retraining or per-job cancel is provided.
+```mermaid
+flowchart LR
+    UI[React browser app] <--> API[FastAPI]
+    API <--> DB[(SQLite jobs and reviews)]
+    API <--> Worker[Supervised inference child]
+    Worker --> Files[Local image artifacts]
+    API --> Files
+```
 
-- [Evaluation design and measured evidence](EVALUATION.md)
-- [Model card and limitations](docs/MODEL-CARD.md)
-- [Owned-photo status](reports/owned-capture-status.md) and [capture recipe](docs/CAPTURE-GUIDE.md)
-- [Engineering case study](docs/CASE-STUDY.md) and [two-minute walkthrough](docs/WALKTHROUGH.md)
-- [Runbook: setup, optional features, batch, quotas, lease and recovery](docs/RUNBOOK.md)
-- [Exported OpenAPI](docs/api/openapi.json), [specification](docs/SPEC.md) and [verification state](docs/STATE.md) and [execution record](docs/EXECUTION-RECORD.md)
+For design details and trade-offs, read the [engineering case study](docs/CASE-STUDY.md), [specification](docs/SPEC.md) or [API contract](docs/api/openapi.json).
 
-## Observed procedural comparison
-
-Each method processed 90 held-out images: 36 good, 36 known defects and 18 ambiguous. Both detected all labelled defects without false rejects. Difference required 23.3% reviews versus 60.0% for the pretrained patch method, with mean mask IoU 1.000 versus 0.213 and warm pipeline p95 of 16.51 ms versus 32.29 ms. See the [full report](reports/fixture-v1/report.md) for hashes, timing scope, raw rows and limits. These easy procedural results cannot establish photographic accuracy.
-
-## Verification
-
-Stop owned servers before checks; then:
+## Tests
 
 ```bash
+uv sync --locked --extra features
 npm --prefix web exec -- playwright install chromium
 uv run python scripts/verify.py --fixture-only
+```
+
+The verification command runs Ruff, frontend lint, strict Pyright and TypeScript checks, Python and browser-component tests, the production build, Playwright against the real API and an interrupted-worker/restart scenario. Stop this project's servers first. To verify independent dependencies and generated data from committed source:
+
+```bash
 uv run python scripts/clean_clone.py
 ```
 
-The clean-clone check requires clean committed source and creates an independent local clone under .runtime. It tests strict Python/TypeScript, unit/integration checks, build, actual browser uploads/corrections and interrupted-worker restart. It performs no push or publication. Screen-reader testing has not been performed.
+The [verification record](docs/STATE.md) lists exact outcomes and the [review record](docs/REVIEW.md) records findings and fixes. Screen-reader testing remains unperformed.
 
 ## Scope and licence
 
-One object, controlled overhead view, file input and human review. Webcam/industrial cameras, line controls, cloud hosting, authenticated teams and automatic training are outside v1. Procedural data cannot establish performance on photographs or uncontrolled production environments. No customer pilot or simulated time-saving claim is made.
+This is a single-operator local application for a controlled overhead view. Camera integration, authenticated teams, cloud hosting, automatic retraining and per-job cancellation are outside v1. See [security and limits](SECURITY.md).
 
-Original code/docs/procedural images: [MIT](LICENSE). Third-party model/data terms remain separate; no external benchmark assets or weights are redistributed. See [contributing](CONTRIBUTING.md), [security](SECURITY.md) and [changelog](CHANGELOG.md).
+Original code, documentation and procedural images are [MIT licensed](LICENSE). Third-party weights and training data retain their own terms; no weights or external image datasets are redistributed. Contributions are covered in [CONTRIBUTING.md](CONTRIBUTING.md).

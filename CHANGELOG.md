@@ -7,5 +7,8 @@
 - Durable bounded jobs, append-only corrections, worker recovery and explicit failures.
 - Local API/batch and accessible light/dark inspection interface, exercised in an actual browser.
 - Frozen evaluation tooling and an explicit owned-photo evidence gate.
+- Aggregate evaluation reports retained when API timing fails, with explicit incomplete status.
+- Reloadable inspection links preserved beyond the newest job page, with missing-link errors.
+- Recruiter-facing overview, measured method comparison, portable setup and reviewed documentation.
 
-No public release, deployment or owned-photo validation has been performed. Final run and clean-clone status are recorded in docs/STATE.md.
+No tagged release, deployment or owned-photo validation has been performed. Final run and clean-clone status are recorded in docs/STATE.md.

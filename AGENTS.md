@@ -1,39 +1,34 @@
-# Defect Lens execution instructions
+# Repository guidance
 
-## Entry and scope
+## Scope
 
-Own only `/Users/matthewgoralczyk/BentoLabs/portfolio/defect-lens` in the current multi-chat workspace. Before edits read this file, `../AGENTS.md`, `CHAT-HANDOFF.md`, `README.md`, `docs/SPEC.md`, `EVALUATION.md`, `docs/superpowers/plans/2026-10-15-v1.md`, `docs/RELEASE-STANDARD.md` and `docs/STATE.md`; inspect actual files and Git state. A standalone checkout uses the mirrored rules here and its local documents; it has no sibling service or parent-package dependency.
+Verify the working directory and Git root before editing. Work only in the assigned checkout, preserve unrelated changes and keep generated state under `.runtime/`. This repository has no dependency on an adjacent project or a parent workspace package.
 
-Set every shell tool's workdir explicitly to this child and prove it with pwd. A fork may retain the resume workspace in the app. Do not commit through an unrelated app panel. Never initialize Git in the parent; if this child has no repository, Task 1 may run git init -b feat/defect-lens-v1 here. If Git resolves outside this directory, stop before writes. Never replace uncommitted work or change global Git configuration.
+Read `docs/SPEC.md` for supported behavior, `EVALUATION.md` for measurement rules and `docs/STATE.md` for verified outcomes. Do not treat a document's existence as proof that its checks passed.
 
-Do not edit siblings, parent coordination files, the resume workspace, vault, registry, archive or machine settings. Other chats are active. Report an integration-owner update request when verified work requires a central operations record; preserve unknown commitments. No monitors or scheduled automations.
+## Development
 
-## Execution discipline
+Use Python 3.12 through uv, Node 24 and the committed dependency locks. Do not replace global runtimes. Local compatibility exceptions belong in the verification record.
 
-The v1 implementation is authorized and tracked in docs/STATE.md. Resume from that state and Git evidence; do not restart completed tasks. Use native superpowers:executing-plans, work task by task, and update STATE with exact commands/outcomes. Do not repeat discovery for settled product choices or automatically delegate a chain of agents. Read the files/callers/tests being changed before editing. Keep source and prose ASCII.
+The API binds to `127.0.0.1:8111` and the web app to `127.0.0.1:5111`, with strict port selection and the exact browser origin. Inspect an occupied port's owner; never stop an unknown process or silently change ports. Use `scripts/dev.py` for owned-process startup and shutdown.
 
-The first word of every user-facing reply is Matthew. Before the first tool call say what will happen in one sentence. Report measured outcomes, skipped checks and remaining evidence precisely; a file's existence is not a passing test.
+Read affected code, callers and tests before changes. Keep fixes scoped, add meaningful regression coverage and verify the complete affected flow. Source and documentation use ASCII punctuation. UI changes preserve both themes, keyboard operation, responsive layouts and reduced-motion behavior.
 
-Local reversible development, tests and scoped local commits are authorized by the execution prompt. Public GitHub repository creation, pushes, release publishing, deployment, paid compute, model uploads and external messages require specific authorization. Inspect before deletion or overwrite of pre-existing material. Do not install product dependencies or run models during the planning pass.
+## Checks
 
-## Runtime isolation
+```bash
+uv sync --locked --extra features
+npm --prefix web ci
+npm --prefix web exec -- playwright install chromium
+uv run python scripts/verify.py --fixture-only
+```
 
-Python 3.12.x through uv, requires-python >=3.12,<3.13. Python 3.12.14 was found during planning; the shell default 3.14.7 is not selected. Node 24 LTS through an existing supported manager; shell Node 26.7.0 requires a documented compatibility check if used as a local exception, while CI remains Node 24. Pin actual resolved versions in uv.lock and web/package-lock.json. No global runtime replacement.
+Run strict Python and TypeScript checks including test files. Browser tests use the actual local API. Do not substitute mocked inference for measured model results. Regenerate API contracts with `scripts/export_contracts.py`; keep the exported OpenAPI and TypeScript types consistent.
 
-Own .venv and web/node_modules. All generated database, images, model artifacts, logs, PIDs and outputs live under this repository's .runtime. Curated original reports are explicitly tracked under reports/. Do not share mutable dependencies or use sibling APIs.
+## Models and evidence
 
-Reserve API 127.0.0.1:8111 and web 127.0.0.1:5111. Vite strictPort is required; CORS is exactly http://127.0.0.1:5111. Inspect an occupied port's owner; do not change ports or stop unknown processes. The full workspace also reserves 8112-8115, 5112-5115 and 8212/8312/8412 for other chats.
+Before pretrained loading/inference or a complete benchmark, acquire the machine lease at `/tmp/bentolabs-portfolio-ml.lock` through the existing lease implementation. A busy lease means refusal, not automatic recovery. Stop and join owned model children before releasing the matching token/identity. See `docs/RUNBOOK.md` for the protocol.
 
-## Machine lease
+Keep procedural fixtures, actual pretrained execution and reviewed photographs distinct. Calibration uses validation images only. Preserve frozen report contents and provenance; new measurements use a separate report directory. Human corrections never become automatic training labels. Inference source, dependency or preparation-data changes require a new model revision.
 
-The machine has an M5 Pro and 24 GiB memory. Edits/light tests may run concurrently; pretrained model load/inference, heavy preparation and full benchmarks run one at a time. Acquire before loading weights with atomic mkdir `/tmp/bentolabs-portfolio-ml.lock`. Write owner.json containing project defect-lens, supervisor PID, UTC start, purpose, random token and process-start identity. mkdir failure means busy: return model_busy / exit 3 and continue light work. Never spin, steal or auto-delete the lease.
-
-Keep the lease for the full model-child lifetime and for an entire comparison benchmark. Stop/join/unload the worker before releasing only the token-matching owned lease in finally/shutdown. No resident model may survive lease release. Stale recovery requires inspecting owner and actual process identity; reused PID is not proof. Default image-difference mode may remain usable while the lease is busy; feature mode reports unready and never silently switches models.
-
-## Product and verification boundaries
-
-One tabletop plate/card with four dark fasteners; inspect missing fastener or unexpected surface mark. Original procedural fixtures are the offline sample. No real photographs are assumed present. A synthetic demonstration, actual pretrained execution and owned capture validation are distinct evidence states. Human corrections are append-only feedback, not automatic training labels. There is no per-job cancel API; interrupt/recovery tests stop owned processes and check resulting durable states.
-
-Read the available frontend-design skill before UI implementation. Implement both palettes, typography, spacing, responsive behavior, keyboard operation and reduced motion from SPEC; finish with alignment/spacing/detail review. Do not claim screen-reader testing unless performed.
-
-Install full check environments with uv sync --locked --extra features so optional feature imports typecheck without global packages; this downloads no weights and runs no model. Run Ruff, strict Pyright covering src/tests/scripts, pytest, strict TypeScript covering source/unit/browser tests and configs, Vitest, production build and Playwright against the actual API. Test clean clone, correction persistence across restart, invalid/oversized images, interrupted jobs, deduplication and owned-process shutdown. Record skipped real-model/capture checks with precise reasons; do not substitute a stub. Preserve actual environment, model/data/config hashes, sample counts and report provenance. MIT applies to original code/docs, not third-party weights/data.
+Do not commit private captures, weights, credentials, logs or customer material. Original code/docs/procedural images are MIT licensed; third-party assets keep their own terms. Publication, deployment, paid resources and external messages require the user's authorization. Stop owned processes and report exact checks, failures and skipped evidence when finishing.
