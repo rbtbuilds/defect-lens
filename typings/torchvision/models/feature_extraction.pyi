@@ -1,0 +1,3 @@
+from torch.nn import Module
+
+def create_feature_extractor(model: Module, return_nodes: dict[str, str]) -> Module: ...

@@ -28,3 +28,7 @@ web/test-results/
 web/playwright-report/
 web/coverage/
 *.egg-info/
+
+# Typed signatures for untyped optional public APIs are source.
+!typings/torchvision/models/
+!typings/torchvision/models/*.pyi

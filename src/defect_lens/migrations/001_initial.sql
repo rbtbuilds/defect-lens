@@ -1,0 +1,8 @@
+BEGIN IMMEDIATE;
+CREATE TABLE IF NOT EXISTS models(revision TEXT PRIMARY KEY, method TEXT NOT NULL, data_mode TEXT NOT NULL, manifest_json TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, idempotency_key TEXT UNIQUE NOT NULL, request_hash TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('queued','running','succeeded','failed')), model_revision TEXT NOT NULL REFERENCES models(revision), data_mode TEXT NOT NULL, input_relpath TEXT NOT NULL, raw_sha256 TEXT NOT NULL, metadata_json TEXT NOT NULL, created_at TEXT NOT NULL, started_at TEXT, finished_at TEXT, error_json TEXT, reserved_bytes INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS inspections(id TEXT PRIMARY KEY, job_id TEXT UNIQUE NOT NULL REFERENCES jobs(id), model_revision TEXT NOT NULL REFERENCES models(revision), original_decision TEXT NOT NULL CHECK(original_decision IN ('pass','review','fail')), score REAL, reasons_json TEXT NOT NULL, artifacts_json TEXT NOT NULL, regions_json TEXT NOT NULL, review_version INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS reviews(id TEXT PRIMARY KEY, inspection_id TEXT NOT NULL REFERENCES inspections(id), idempotency_key TEXT NOT NULL, request_hash TEXT NOT NULL, version INTEGER NOT NULL, decision TEXT NOT NULL CHECK(decision IN ('pass','review','fail')), note TEXT NOT NULL, operator_alias TEXT NOT NULL, model_revision TEXT NOT NULL REFERENCES models(revision), created_at TEXT NOT NULL, UNIQUE(inspection_id,version), UNIQUE(inspection_id,idempotency_key));
+CREATE INDEX IF NOT EXISTS jobs_pending ON jobs(status,created_at);
+PRAGMA user_version=1;
+COMMIT;

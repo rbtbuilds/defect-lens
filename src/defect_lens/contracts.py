@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -62,3 +63,75 @@ class InputMetadata(Contract):
     height: int
     aspect_ratio: float
     image_format: str = "PNG"
+
+
+class AcceptedInput(Contract):
+    normalized_path: Path
+    metadata: InputMetadata
+
+
+class UploadForm(Contract):
+    model_revision: str = Field(pattern=r"^[0-9a-f]{64}$")
+    data_mode: DataMode
+
+
+class Job(Contract):
+    id: str
+    status: JobStatus
+    model_revision: str
+    data_mode: DataMode
+    created_at: str
+    started_at: str | None = None
+    finished_at: str | None = None
+    inspection_id: str | None = None
+    error: JobError | None = None
+
+
+class Region(Contract):
+    x: int
+    y: int
+    width: int
+    height: int
+    peak_score: float
+
+
+class ReviewCreate(Contract):
+    decision: Decision
+    note: str = Field(max_length=1000)
+    operator_alias: str = Field(min_length=1, max_length=80)
+    expected_version: int = Field(ge=0)
+
+
+class Review(Contract):
+    id: str
+    inspection_id: str
+    version: int
+    decision: Decision
+    note: str
+    operator_alias: str
+    created_at: str
+    model_revision: str
+
+
+class Inspection(Contract):
+    id: str
+    job_id: str
+    model_revision: str
+    data_mode: DataMode
+    original_decision: Decision
+    score: float | None
+    reasons: list[str]
+    aligned_image_url: str | None
+    heatmap_url: str | None
+    normalized_image_url: str
+    regions: list[Region]
+    latest_review: Review | None = None
+
+
+class StoredResult(Contract):
+    decision: Decision
+    score: float | None
+    reasons: list[str]
+    artifacts: dict[str, str]
+    artifact_bytes: int
+    regions: list[Region]

@@ -11,7 +11,9 @@ Git root and working directory verified as /Users/matthewgoralczyk/BentoLabs/por
 | 2. Fixtures/decoder | Complete | 91d0139; 216 original procedural samples, 36 good train, repeat generation matches. |
 | 3. Difference/calibration | Complete | 19 tests pass; good/pass, missing/fail, blur/review in actual pipeline test. |
 | 4. Pretrained/lease | Complete | 23 light tests and actual pretrained integration pass; 45 MiB checkpoint verified and local only. |
-| 5-10 | Pending | Durable workflow, UI, evaluation and release checks remain. |
+| 5. Durable workflow | Complete | 30 light tests pass; actual child inference, timeout/restart budget, memory monitor, atomic rollback and corrections. |
+| 6. API/batch | Next | HTTP workflow pending. |
+| 7-10 | Pending | UI, evaluation and release checks remain. |
 
 ## Verification
 
@@ -29,6 +31,8 @@ Procedural software workflow: in progress. Actual pretrained execution: passed r
 
 ## Next action
 
-Task 5: durable jobs, corrections and supervised recovery.
+Task 6: bounded HTTP upload, polling, artifacts, review and batch.
+
+Task 5: `uv run --extra features pytest -m "not real_model" -q` ->30 passed,1 deselected; strict Pyright and Ruff pass. Spawned real difference worker completes exactly one inspection; timeout kills/join, one restart then degraded; 1 MiB test ceiling exercises RSS recovery. Competing admission respects one-slot capacity; a simulated post-artifact/pre-commit crash rolls back and startup marks INTERRUPTED. Correction replay/version conflict and reopen persistence pass. Server lock refuses a second owner. No feature worker remains resident.
 
 Task 4 exact checks: `uv run --extra features pytest -m "not real_model" -q` (23 passed), `uv run --extra features pytest tests/integration/test_feature_prepare.py -m real_model -q` (1 passed), strict Pyright and Ruff passed. Feature prepare succeeded under the shared lease; the child exited before token-checked release. Weight origin/checksum is in MODEL-CARD and model manifest. No owned photographs were used. Narrow local torchvision signature stubs cover its untyped public entry points; no missing-import exclusion.
