@@ -29,6 +29,7 @@ def test_fixture_cli_writes_a_real_manifest(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, result.stderr
     assert (tmp_path / "cli/manifest.json").exists()

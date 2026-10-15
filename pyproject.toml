@@ -41,6 +41,7 @@ extend-exclude = ["docs", "*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "--basetemp=.runtime/pytest"
 markers = ["real_model: requires actual pretrained weights and the machine lease"]
 

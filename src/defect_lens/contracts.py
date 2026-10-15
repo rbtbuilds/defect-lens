@@ -60,4 +60,5 @@ class InputMetadata(Contract):
     raw_sha256: str
     width: int
     height: int
-    aspect: float
+    aspect_ratio: float
+    image_format: str = "PNG"

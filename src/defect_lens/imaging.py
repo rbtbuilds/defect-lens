@@ -32,7 +32,11 @@ def inspect_input(path: Path) -> InputMetadata:
                 ):
                     raise InputRejected("IMAGE_DIMENSIONS")
                 return InputMetadata(
-                    raw_sha256=file_hash(path), width=width, height=height, aspect=width / height
+                    raw_sha256=file_hash(path),
+                    width=width,
+                    height=height,
+                    aspect_ratio=width / height,
+                    image_format=image.format,
                 )
     except (
         UnidentifiedImageError,

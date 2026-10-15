@@ -1,53 +1,32 @@
 # Defect Lens state
 
-Updated: 2026-10-15. Status: implementation in progress. Task 1 verified; Task 2 next.
-
-## Observed repository state
-
-Project: `/Users/matthewgoralczyk/BentoLabs/portfolio/defect-lens`.
-
-The initial inspection found README.md, EVALUATION.md, LICENSE and .gitignore only. `git rev-parse --show-toplevel` returned exit 128: no Git repository in this directory or its parents. No application, dependency manifests, installed project dependencies, tests, model weights, generated fixture dataset or measurements were created by this planning task.
-
-Planning documents now exist: AGENTS.md, CHAT-HANDOFF.md, docs/SPEC.md and docs/superpowers/plans/2026-10-15-v1.md. README navigation points to them. The integration owner supplies docs/RELEASE-STANDARD.md. These documents are implementation instructions, not test evidence.
-
-Parent runtime probes reported Python 3.12.14 available through uv, shell Python 3.14.7, shell Node 26.7.0/npm 11.19.0, no listeners on reserved portfolio ports and no ML lease at probe time. Recheck all of these at execution; no process availability is guaranteed by this record.
+Updated: 2026-10-15. Implementation in progress on feat/defect-lens-v1.
+Git root and working directory verified as /Users/matthewgoralczyk/BentoLabs/portfolio/defect-lens.
 
 ## Task ledger
 
 | Task | State | Evidence |
 | --- | --- | --- |
-| 1. Isolated bootstrap | Not started | No Git root or manifests. |
-| 2. Fixtures and decoder | Not started | Recipe specified; no dataset generated. |
-| 3. Difference model/calibration | Not started | Method specified; no inference run. |
-| 4. Patch features/lease | Not started | API references checked; weights absent. |
-| 5. Durable jobs/reviews/recovery | Not started | Schema/state machine specified only. |
-| 6. API and batch | Not started | Contract specified only. |
-| 7. Operator interface | Not started | Design specified; no screenshots/browser run. |
-| 8. Measured fixture evaluation | Not started | No metrics or report artifact. |
-| 9. Owned capture evidence | Not started | No owned photos supplied or assumed. |
-| 10. Clean clone/runbook | Not started | No executable project to verify. |
+| 1. Bootstrap | Complete | d6a1702; Python 3.12.14, Node 26.7.0 compatibility exception, isolated locks and dependencies. |
+| 2. Fixtures/decoder | Complete | 91d0139; 216 original procedural samples, 36 good train, repeat generation matches. |
+| 3. Difference/calibration | Complete | 19 tests pass; good/pass, missing/fail, blur/review in actual pipeline test. |
+| 4. Pretrained/lease | Next | No weights loaded yet. |
+| 5-10 | Pending | Durable workflow, UI, evaluation and release checks remain. |
 
-## Planning verification
+## Verification
 
-Read the complete parent instructions, existing README/EVALUATION/.gitignore/LICENSE and writing-plans skill. Checked primary Torchvision ResNet18 and feature extraction, OpenCV ECC, and uv project documentation on 2026-10-15. Their URLs are in SPEC where used. No model quality inference is drawn from those API references.
+Task 1: config/health RED to GREEN; strict Python and TypeScript and web build passed.
+Task 2: manifests/decoder RED to GREEN; full suite 10 passed; CLI fixtures and fixtures-repeat each 216 samples; strict checks passed.
+Task 3: missing implementation RED, then import-path correction (pytest pythonpath=['.']); full suite 19 passed, Ruff and strict Pyright passed. `uv run defect-lens prepare --method difference --dataset .runtime/data/fixtures/manifest.json --output .runtime/models/demo-difference` succeeded. Tests verify checksum tampering, no held-out image reads, repeated revision reuse and preservation after configuration identity change. Git provenance is outside revision identity.
 
-Planning verification passed: a Python standard-library check verified ASCII for all six owned Markdown files, balanced fences, existing local Markdown links, and ast.parse of every fenced Python snippet. It counted 10 dependency-ordered tasks and 45 checkbox gates in the 330-line plan, rejected unscoped generated-data paths and found no unresolved implementation markers. A manual review traced A1-A8 to tasks, checked interfaces, lease ownership, interrupt behavior, immutable model revisions and strict optional-library checks. Application typechecks, unit/integration/browser tests, model runs and clean-clone checks are intentionally not run: product source and tooling do not exist. Do not mark them passed.
+## Decisions
+
+Use the assigned isolated child repository directly. Node 24 unavailable locally; Vite engine >=22.12 supports installed Node 26.7.0, while CI targets 24. pytest temporary files stay under .runtime/pytest to avoid shared test-root cleanup. PreparedFrame retains the ECC transform to align validation masks consistently.
 
 ## Evidence gates
 
-- Software fixture completion: pending all implementation/checks.
-- Actual pretrained feature execution: pending dependency resolution, verified weight download, owned machine lease and real run.
-- Held-out procedural comparison: pending prepared/calibrated methods and actual measured report.
-- Owned-photo results: pending original capture assets, rights/provenance, specimen/session split, labels and real comparison.
-- Screen-reader verification: not performed.
-- Publishing/deployment/paid compute: not authorized by this planning task or the local implementation handoff.
+Procedural software workflow: in progress. Actual pretrained execution: not run yet. Owned-photo evaluation: not run; no capture set supplied. Screen reader: not tested. No publishing, push, deployment, paid compute or external sends authorized.
 
 ## Next action
 
-When Matthew pastes CHAT-HANDOFF.md into the fork, read the required documents, prove workdir/Git/process state and execute Task 1 with native superpowers:executing-plans. Continue through independent tasks if model lease or captures are unavailable. Store exact commands, exit status, report paths and pending evidence here after each task; retain historical blockers until resolved with evidence.
-
-## Implementation evidence
-
-Task1: child Git initialised on feat/defect-lens-v1 (baseline a9a731f). Python3.12 project dependencies installed and locked; Node26.7 local exception verified against Vite engine >=22.12,CI targets24. Config/health tests RED missing modules -> GREEN2/2. Ruff,strict Pyright including tests,web strict typecheck and production build pass. pytest temporary state is scoped to .runtime/pytest; no shared suite cleanup is requested. No weights or inference loaded.
-
-Task2: original procedural generator produces216 samples with36 good training images; repeated CLI generation matches. Decoder admission/corruption/EXIF/animation and manifest grouping/path/hash tests pass. Full suite10tests; strict Pyright and Ruff pass. No real photos or pretrained weights used.
+Task 4: implement bounded patch scoring and machine lease; continue independent work if the shared lease is busy.

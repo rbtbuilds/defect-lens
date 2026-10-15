@@ -1,0 +1,240 @@
+import hashlib
+import json
+import re
+import subprocess
+from collections.abc import Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from uuid import uuid4
+
+import cv2
+import numpy as np
+
+from defect_lens.contracts import (
+    Contract,
+    DataMode,
+    DatasetManifest,
+    Decision,
+    InputMetadata,
+    Method,
+    SampleRecord,
+)
+from defect_lens.imaging import RgbFrame, decode_image, inspect_input
+from defect_lens.inference.base import Scorer, ScoreResult
+from defect_lens.inference.calibration import Calibration, LabelledScore, calibrate, decide
+from defect_lens.inference.difference import DifferenceScorer, fit_difference
+from defect_lens.inference.preprocess import PreparedFrame, prepare_frame
+from defect_lens.manifests import contained, file_hash, validate_manifest
+
+
+class ModelIntegrityError(ValueError):
+    pass
+
+
+INFERENCE_CONFIG = {
+    "size": 256,
+    "roi": [32, 224],
+    "ecc_iterations": 40,
+    "ecc_epsilon": 1e-5,
+    "angle_limit": 5,
+    "translation_limit": 12,
+    "correlation_min": 0.8,
+    "blur_variance_min": 20,
+    "clipped_fraction_max": 0.25,
+    "top_fraction": 0.01,
+    "brightness_limit": 0.1,
+}
+
+
+class ModelManifest(Contract):
+    revision: str
+    method: Method
+    data_mode: DataMode
+    source_hash: str
+    lock_hashes: dict[str, str]
+    training_hash: str
+    validation_hash: str
+    artifact_hashes: dict[str, str]
+    calibration: Calibration
+    seed: int
+    inference_config: dict[str, object]
+
+
+def canonical(value: object) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+
+
+class CurrentPointer(Contract):
+    revision: str
+
+
+def resolve_model(directory: Path) -> Path:
+    if (directory / "CURRENT.json").exists():
+        revision = CurrentPointer.model_validate_json(
+            (directory / "CURRENT.json").read_bytes()
+        ).revision
+        if not re.fullmatch("[0-9a-f]{64}", revision):
+            raise ModelIntegrityError("invalid revision")
+        return contained(directory, f"revisions/{revision}")
+    return directory
+
+
+@dataclass
+class ModelBundle:
+    manifest: ModelManifest
+    anchor: RgbFrame
+    scorer: Scorer
+
+    def inspect(
+        self, frame: RgbFrame, metadata: InputMetadata
+    ) -> tuple[PreparedFrame, ScoreResult, Decision]:
+        prepared = prepare_frame(frame, self.anchor, metadata)
+        result = self.scorer.score(prepared)
+        return prepared, result, decide(result.score, self.manifest.calibration, result.reasons)
+
+
+def load_model(directory: Path) -> ModelBundle:
+    root = resolve_model(directory)
+    manifest = ModelManifest.model_validate_json((root / "manifest.json").read_bytes())
+    identity = manifest.model_dump(exclude={"revision"})
+    if hashlib.sha256(canonical(identity)).hexdigest() != manifest.revision:
+        raise ModelIntegrityError("model manifest identity mismatch")
+    for relative, expected in manifest.artifact_hashes.items():
+        if file_hash(contained(root, relative)) != expected:
+            raise ModelIntegrityError("model artifact checksum mismatch")
+    anchor = np.asarray(np.load(root / "anchor.npy", allow_pickle=False), dtype=np.uint8)
+    scorer = DifferenceScorer(
+        np.asarray(np.load(root / "reference.npy", allow_pickle=False), dtype=np.uint8)
+    )
+    return ModelBundle(manifest, anchor, scorer)
+
+
+def load_difference(directory: Path) -> DifferenceScorer:
+    scorer = load_model(directory).scorer
+    if not isinstance(scorer, DifferenceScorer):
+        raise ModelIntegrityError("not a difference model")
+    return scorer
+
+
+def subset_hash(samples: Sequence[SampleRecord]) -> str:
+    return hashlib.sha256(canonical([s.model_dump() for s in samples])).hexdigest()
+
+
+def prepare_model(dataset: Path, method: Method, output: Path) -> ModelManifest:
+    all_data = DatasetManifest.model_validate_json(dataset.read_bytes())
+    selected = all_data.model_copy(
+        update={"samples": [s for s in all_data.samples if s.split != "test"]}
+    )
+    validate_manifest(selected, dataset.parent)
+    train = sorted([s for s in selected.samples if s.split == "train"], key=lambda s: s.id)
+    if not train or any(s.label != "good" for s in train):
+        raise ValueError("training must contain good samples only")
+    anchor = decode_image(contained(dataset.parent, train[0].image_path))
+    aligned: list[RgbFrame] = []
+    for sample in train:
+        path = contained(dataset.parent, sample.image_path)
+        frame = prepare_frame(decode_image(path), anchor, inspect_input(path))
+        if not frame.quality_reasons:
+            aligned.append(frame.rgb)
+    if method != "difference":
+        raise ValueError("feature method not prepared")
+    scorer = fit_difference(aligned)
+    labelled: list[LabelledScore] = []
+    validation = [s for s in selected.samples if s.split == "validation"]
+    for sample in validation:
+        if sample.label == "ambiguous":
+            continue
+        path = contained(dataset.parent, sample.image_path)
+        frame = prepare_frame(decode_image(path), anchor, inspect_input(path))
+        if frame.quality_reasons:
+            continue
+        result = scorer.score(frame)
+        mask = None
+        if sample.mask_path is not None:
+            from PIL import Image
+
+            with Image.open(contained(dataset.parent, sample.mask_path)) as image:
+                mask = np.asarray(image, dtype=np.uint8)
+            if frame.transform is not None:
+                mask = np.asarray(
+                    cv2.warpAffine(
+                        mask,
+                        frame.transform,
+                        (256, 256),
+                        flags=cv2.INTER_NEAREST | cv2.WARP_INVERSE_MAP,
+                    ),
+                    dtype=np.uint8,
+                )
+        labelled.append(
+            LabelledScore(
+                sample.id, sample.specimen_id, sample.label, result.score, result.heatmap, mask
+            )
+        )
+    calibration = calibrate(labelled, subset_hash(validation))
+    output.mkdir(parents=True, exist_ok=True)
+    stage = output / f".stage-{uuid4().hex}"
+    stage.mkdir()
+    np.save(stage / "anchor.npy", anchor, allow_pickle=False)
+    np.save(stage / "reference.npy", scorer.reference, allow_pickle=False)
+    source_root = Path(__file__).parent
+    source_paths = [
+        *sorted((source_root / "inference").glob("*.py")),
+        source_root / "models.py",
+        source_root / "imaging.py",
+    ]
+    source_hash = hashlib.sha256(
+        canonical({p.name: file_hash(p) for p in source_paths})
+    ).hexdigest()
+    repository_root = source_root.parents[1]
+    locks = {
+        name: file_hash(repository_root / name)
+        for name in ["uv.lock", "web/package-lock.json"]
+        if (repository_root / name).exists()
+    }
+    fields = {
+        "method": method,
+        "data_mode": all_data.mode,
+        "source_hash": source_hash,
+        "lock_hashes": locks,
+        "training_hash": subset_hash(train),
+        "validation_hash": subset_hash(validation),
+        "artifact_hashes": {p.name: file_hash(p) for p in stage.iterdir()},
+        "calibration": calibration.model_dump(),
+        "seed": all_data.seed or 0,
+        "inference_config": INFERENCE_CONFIG,
+    }
+    revision = hashlib.sha256(canonical(fields)).hexdigest()
+    manifest = ModelManifest.model_validate(dict(revision=revision, **fields))
+    provenance = {
+        "git_commit": subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repository_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.strip(),
+        "git_dirty": bool(
+            subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=repository_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            ).stdout.strip()
+        ),
+    }
+    (stage / "provenance.json").write_bytes(canonical(provenance))
+    (stage / "manifest.json").write_text(manifest.model_dump_json(indent=2) + "\n")
+    target = output / "revisions" / revision
+    target.parent.mkdir(exist_ok=True)
+    if target.exists():
+        load_model(target)
+        for path in stage.iterdir():
+            path.unlink()
+        stage.rmdir()
+    else:
+        stage.rename(target)
+    temporary = output / f".CURRENT-{uuid4().hex}.json"
+    temporary.write_bytes(canonical({"revision": revision}))
+    temporary.replace(output / "CURRENT.json")
+    return manifest
