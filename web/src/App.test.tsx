@@ -202,3 +202,37 @@ it("shows a missing linked job without substituting a different inspection", asy
     screen.queryByRole("button", { pressed: true }),
   ).not.toBeInTheDocument();
 });
+
+it("retains a missing-job error when model metadata arrives later", async () => {
+  const { ApiError } = await import("./api");
+  location.hash = "44444444-4444-4444-8444-444444444444";
+  let finish:
+    ((value: Awaited<ReturnType<typeof api.models>>) => void) | undefined;
+  const metadata = new Promise<Awaited<ReturnType<typeof api.models>>>(
+    (resolve) => {
+      finish = resolve;
+    },
+  );
+  vi.mocked(api.models).mockReturnValue(metadata);
+  vi.mocked(api.job).mockRejectedValue(
+    new ApiError("NOT_FOUND", "Job not found"),
+  );
+  render(<App />);
+  expect(await screen.findByRole("alert")).toHaveTextContent("NOT_FOUND");
+  await act(async () => {
+    finish?.({
+      status: "ready",
+      model_revision: "a".repeat(64),
+      method: "difference",
+      data_mode: "procedural",
+      low: 0.1,
+      high: 0.2,
+      heatmap_display_max: 1,
+    });
+    await metadata;
+  });
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "NOT_FOUND: Job not found",
+  );
+  expect(screen.queryByTestId("result-job")).not.toBeInTheDocument();
+});

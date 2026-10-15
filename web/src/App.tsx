@@ -19,6 +19,9 @@ export default function App() {
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [modelError, setModelError] = useState("");
+  const [jobError, setJobError] = useState("");
+  const displayedError = error || jobError || modelError;
   const [epoch, setEpoch] = useState(0);
   const [cursor, setCursor] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("Loading local workbench");
@@ -41,7 +44,7 @@ export default function App() {
               : list.items;
           });
           setCursor(list.next_cursor);
-          setError("");
+          setModelError("");
           setSelectedId((current) => current ?? list.items[0]?.id ?? null);
           return (
             metadata.status === "loading" ||
@@ -50,7 +53,7 @@ export default function App() {
             )
           );
         },
-        (e) => setError(errorText(e)),
+        (e) => setModelError(errorText(e)),
       ),
     [epoch],
   );
@@ -71,17 +74,19 @@ export default function App() {
           const result = await api.inspection(job.inspection_id, signal);
           if (!signal.aborted) setInspection(result);
         }
+        setJobError("");
         return job.status === "queued" || job.status === "running";
       },
-      (e) => setError(errorText(e)),
+      (e) => setJobError(errorText(e)),
     );
-  }, [selectedId]);
+  }, [selectedId, epoch]);
   function choose(job: Job) {
     if (selectedId === job.id) return;
     setInspection(null);
     setSelected(job);
     setSelectedId(job.id);
     setError("");
+    setJobError("");
     location.hash = job.id;
   }
   async function submit(file: File) {
@@ -169,9 +174,9 @@ export default function App() {
       <p className="sr-only" role="status" aria-live="polite">
         {announcement}
       </p>
-      {error && (
+      {displayedError && (
         <div className="notice error" role="alert">
-          {error}
+          {displayedError}
           <button type="button" onClick={() => setEpoch((value) => value + 1)}>
             Retry connection
           </button>

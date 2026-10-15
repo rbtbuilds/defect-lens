@@ -14,7 +14,7 @@ The reviewer reproduced both defects independently. The implementer then added f
 
 ## Verification
 
-The final local command `uv run python scripts/verify.py --fixture-only` passed all 15 steps: Ruff, formatting, strict Pyright including tests/scripts, 68 Python unit/integration cases, frontend lint, strict TypeScript, 10 Vitest cases, the production build, fixture/model preparation, six actual-API browser cases and an actual interrupted-worker/restart case. One real-model test was explicitly deselected.
+The final local command `uv run python scripts/verify.py --fixture-only` passed all 15 steps: Ruff, formatting, strict Pyright including tests/scripts, 68 Python unit/integration cases, frontend lint, strict TypeScript, 11 Vitest cases, the production build, fixture/model preparation, six actual-API browser cases and an actual interrupted-worker/restart case. One real-model test was explicitly deselected.
 
 The minimum-dependency README setup was exercised with torch/torchvision absent; its five existing browser scenarios passed. A fresh screenshot shows an actual missing-fastener overlay and saved correction. Relative Markdown links were checked. A targeted scan of 265 historical blobs found no matching credential patterns or forbidden generated/model paths; it was not a comprehensive secret-scanner certification.
 
@@ -31,3 +31,7 @@ Full output stays local in `.runtime/publication-verification.log`, `.runtime/pu
 - The independent verdict covered the pre-remediation commit. Subsequent changes are supported by the recorded regression and workflow results, without claiming another independent sign-off.
 
 No findings were deferred: the two behavioral defects were fixed, and the decoder discrepancy was addressed through an explicit, tested contract clarification.
+
+## Follow-up from hosted CI
+
+A subsequent hosted run caught an intermittent missing-link error disappearing after a later successful model/list request. This was outside the original independent verdict. A controlled response-order test reproduced it, then passed after request errors were separated by owner. The complete local workflow passed again with 11 UI cases. [STATE.md](STATE.md) links the failing run, the regression evidence and current hosted checks. The fix does not increase test timeouts or retry failed assertions.

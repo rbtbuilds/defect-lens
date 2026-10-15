@@ -12,7 +12,7 @@ Defect Lens v1 implements all ten tasks in the [original execution record](EXECU
 | Strict Pyright, including tests/scripts | 0 errors |
 | Python unit/integration tests | 68 passed; 1 real-model case deselected |
 | Frontend lint and strict TypeScript, including tests | Pass |
-| Vitest | 10 passed |
+| Vitest | 11 passed |
 | Production build | Pass |
 | Actual-API Playwright workflow | 6 passed |
 | Actual interrupted-worker/restart flow | 1 passed |
@@ -41,10 +41,16 @@ No industrial accuracy, customer impact or time saving is claimed. The decoder n
 
 The independent clean-clone check passed at commit `5164122d8892fadfed3647cf67de76d33495e1ce`. Its checkout `.runtime/clean-clone-02ab77b4a6` used its own .venv, package source, node_modules and generated fixtures. All four install/verify commands exited 0, including all 15 checks, six actual browser cases and the restart flow. Proof: `.runtime/clean-clone-evidence.json`; output: `.runtime/publication-clean-clone.log`.
 
-The repository is public at [rbtbuilds/defect-lens](https://github.com/rbtbuilds/defect-lens), with `main` as the default branch. Reviewed implementation and documentation commit `00d674d5476539458d875957d5299b0beab06095` passed [hosted CI](https://github.com/rbtbuilds/defect-lens/actions/runs/38813660529) on Ubuntu with Node 24. The subsequent documentation commit records that result and adds the live CI badge/private reporting link; application source is unchanged.
+The repository is public at [rbtbuilds/defect-lens](https://github.com/rbtbuilds/defect-lens), with `main` as the default branch. Reviewed implementation and documentation commit `00d674d5476539458d875957d5299b0beab06095` passed [hosted CI](https://github.com/rbtbuilds/defect-lens/actions/runs/38813660529) on Ubuntu with Node 24. Documentation commit `250c524` recorded that result and added the CI badge/private reporting link. Its hosted run then exposed an intermittent request-error race despite unchanged application source.
 
 Private vulnerability reporting is enabled. The initial HTTPS push was rejected because its OAuth credential lacked workflow scope; the existing SSH key authenticated as the same `rbtbuilds` owner and published the complete repository including CI. No global authentication settings were changed.
 
 The Git tree was clean after scoped commits, and owned API/web/model processes were stopped. Ports 8111 and 5111 had no listeners. Another project's shared ML lease was left untouched.
 
 No deployment, paid compute, weight upload or unrelated external message is authorized by repository publication. Parent/sibling/vault/operations records remain outside this checkout's ownership. Integration owner: record the verified outcome and remaining capture gate in the existing central record using its exact ID/current version.
+
+## Follow-up CI race regression
+
+[Run 38814176601](https://github.com/rbtbuilds/defect-lens/actions/runs/38814176601) failed the missing-link assertion: model/list metadata could arrive after a failed inspection lookup and clear its error. A deliberately delayed metadata response reproduced that failure in a component test. Model/list, selected-job and operation errors now have separate state, so a successful request cannot erase another request's failure; retry also refreshes the selected lookup.
+
+The regression passed RED-to-GREEN, then all 15 local checks passed with 68 Python cases, 11 UI cases, six actual browser cases and the restart scenario. Output: `.runtime/publication-race-verification.log`. The README badge and [workflow runs](https://github.com/rbtbuilds/defect-lens/actions/workflows/ci.yml) expose the hosted status and exact commit for this fix. No inference or dependency identity changed.
