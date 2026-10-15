@@ -1,0 +1,56 @@
+[project]
+name = "defect-lens"
+version = "0.1.0"
+description = "Local tabletop visual inspection with reproducible evidence"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi==0.143.2",
+    "numpy==2.5.4",
+    "opencv-python-headless==5.0.0.93",
+    "pillow==12.3.0",
+    "psutil==7.2.2",
+    "pydantic-settings==2.16.0",
+    "python-multipart==0.0.32",
+    "uvicorn==0.54.0",
+]
+
+[project.scripts]
+defect-lens = "defect_lens.cli:main"
+
+[project.optional-dependencies]
+features = [
+    "torch==2.14.1",
+    "torchvision==0.29.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+include = ["src", "tests", "scripts"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["docs", "*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--basetemp=.runtime/pytest"
+markers = ["real_model: requires actual pretrained weights and the machine lease"]
+
+[dependency-groups]
+dev = [
+    "httpx==0.28.1",
+    "httpx2==2.13.1",
+    "pyright==1.1.414",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "ruff==0.17.1",
+    "types-psutil==7.2.2.20260906",
+]
