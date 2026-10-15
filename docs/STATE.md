@@ -13,8 +13,9 @@ Git root and working directory verified as /Users/matthewgoralczyk/BentoLabs/por
 | 4. Pretrained/lease | Complete | 23 light tests and actual pretrained integration pass; 45 MiB checkpoint verified and local only. |
 | 5. Durable workflow | Complete | 30 light tests pass; actual child inference, timeout/restart budget, memory monitor, atomic rollback and corrections. |
 | 6. API/batch | Complete | Actual five-image HTTP batch: 5 succeeded,0 failed. Upload/replay/review/queue tests and generated contract checks pass. |
-| 7. Interface | Next | Actual browser workflow pending. |
-| 8-10 | Pending | Evaluation and release checks remain. |
+| 7. Interface | Complete | 7 Vitest tests, strict TypeScript/build and 5 actual API Playwright tests pass; desktop/mobile both palettes inspected. |
+| 8. Evaluation | Next | Frozen measured comparison pending. |
+| 9-10 | Pending | Capture gate and release checks remain. |
 
 ## Verification
 
@@ -32,7 +33,9 @@ Procedural software workflow: in progress. Actual pretrained execution: passed r
 
 ## Next action
 
-Task 7: accessible operator UI and actual browser workflow.
+Task 8: frozen procedural evaluation and measured comparison.
+
+Task 7: `npm --prefix web run typecheck`, `test -- --run` (7 tests), `build` and `test:e2e` (5 tests) passed. Actual browser uploads good/missing/blur, adjusts overlay with keyboard, saves correction and retrieves after reload. Selected-job reselection bug reproduced RED then fixed GREEN. Browser checks 390px/1280px light/dark, keyboard correction/theme and reduced motion, no horizontal overflow and muted-text contrast >=4.5. Screenshots .runtime/screenshots reviewed for alignment/spacing/detail. Chromium installed by Playwright locally; screen-reader testing not performed.
 
 Task 6: focused HTTP tests passed (upload/replay/stale revision/origin, chunked and image caps, two-upload gate, 33rd job, review conflicts), generated OpenAPI/TypeScript consistency checked; strict Pyright/Ruff pass. Real server API8111 batch command submitted5/succeeded5/failed0, JSONL at .runtime/outputs/batch-task6.jsonl. Normalized duplicate/rejected artifacts are cleaned; originals never stored beyond request. Body bytes are capped before multipart parsing, whose bounded memory spool cannot spill into shared temporary storage.
 
