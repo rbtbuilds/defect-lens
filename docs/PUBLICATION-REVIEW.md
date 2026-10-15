@@ -1,6 +1,6 @@
 # Publication review
 
-A fresh independent reviewer inspected implementation commit `5496979` before the public push. The review covered backend consistency and resource limits, inference and evaluation, browser state, documentation and the published evidence. It found two Important defects and one Minor contract discrepancy, with no Critical finding.
+A separate AI reviewer with a fresh context inspected implementation commit `5496979` before the public push. The review covered backend consistency and resource limits, inference and evaluation, browser state, documentation and the published evidence. It found two Important defects and one Minor contract discrepancy, with no Critical finding.
 
 The reviewer reproduced both defects independently. The implementer then added failing regressions, made the fixes and ran the release checks. The reviewer did not re-review the remediation; the evidence below comes from the regression and full-workflow runs.
 

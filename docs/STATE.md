@@ -39,6 +39,8 @@ No industrial accuracy, customer impact or time saving is claimed. The decoder n
 
 ## Publication gates
 
-The authenticated GitHub owner is `rbtbuilds`; `defect-lens` was available when checked. The independent clean-clone gate and remote publication/CI are the remaining steps of the authorized publication pass. Their exact commit/run evidence will be added after execution.
+The independent clean-clone check passed at commit `5164122d8892fadfed3647cf67de76d33495e1ce`. Its checkout `.runtime/clean-clone-02ab77b4a6` used its own .venv, package source, node_modules and generated fixtures. All four install/verify commands exited 0, including all 15 checks, six actual browser cases and the restart flow. Proof: `.runtime/clean-clone-evidence.json`; output: `.runtime/publication-clean-clone.log`.
+
+The authenticated GitHub owner is `rbtbuilds`; `defect-lens` was available when checked. Remote publication and hosted CI are the remaining steps of the authorized publication pass.
 
 No deployment, paid compute, weight upload or unrelated external message is authorized by repository publication. Parent/sibling/vault/operations records remain outside this checkout's ownership. Integration owner: record the verified outcome and remaining capture gate in the existing central record using its exact ID/current version.
