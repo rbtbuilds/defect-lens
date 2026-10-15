@@ -6,6 +6,7 @@ import sys
 import threading
 import time
 from collections.abc import Sequence
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Literal
 
@@ -20,7 +21,14 @@ from defect_lens.errors import DomainError
 from defect_lens.imaging import decode_image, inspect_input
 from defect_lens.inference.calibration import decide
 from defect_lens.inference.preprocess import prepare_frame
-from defect_lens.lease import DEFAULT_LEASE, MachineLease
+from defect_lens.lease import (
+    DEFAULT_LEASE,
+    LeaseBusy,
+    LeaseHandle,
+    MachineLease,
+    run_model_process,
+    token_matches,
+)
 from defect_lens.manifests import contained, file_hash, validate_manifest
 from defect_lens.models import (
     ModelManifest,
@@ -37,6 +45,7 @@ class PredictionRow(Contract):
     truth: Literal["good", "defect", "ambiguous"]
     decision: Decision
     score: float | None
+    raw_score: float | None = None
     binary_fail: bool
     sample_sha256: str = ""
     lighting: str = "normal"
@@ -62,6 +71,33 @@ class Metrics(Contract):
     localization_iou: float | None
     pixel_average_precision: float | None
     failures: int
+
+
+def threshold_prediction(score: float, high: float) -> bool:
+    return score >= high
+
+
+def pixel_average_precision(
+    scores: np.typing.NDArray[np.float32], truth: np.typing.NDArray[np.bool_]
+) -> float | None:
+    values = scores.reshape(-1)
+    actual = truth.reshape(-1)
+    positives = int(np.count_nonzero(actual))
+    if not positives:
+        return None
+    order = np.argsort(-values, kind="stable")
+    sorted_scores = values[order]
+    cumulative = np.cumsum(actual[order])
+    ends = np.concatenate(
+        (
+            np.flatnonzero(sorted_scores[1:] != sorted_scores[:-1]),
+            np.array([len(values) - 1], dtype=np.int64),
+        )
+    )
+    true_positives = cumulative[ends]
+    recall = true_positives / positives
+    precision = true_positives / (ends + 1)
+    return float(np.sum(np.diff(np.concatenate((np.array([0.0]), recall))) * precision))
 
 
 def ratio(numerator: int, denominator: int) -> float | None:
@@ -156,10 +192,11 @@ class MethodReport(Contract):
     metrics: Metrics
     intervals: IntervalSet
     slices: dict[str, Metrics]
-    cold_load_first_inference_ms: float
-    warm_latency_median_ms: float
-    warm_latency_p95_ms: float
-    throughput_per_second: float
+    cold_load_first_inference_ms: float | None
+    warm_latency_median_ms: float | None
+    warm_latency_p95_ms: float | None
+    throughput_per_second: float | None
+    timing_unavailable_reason: str | None = None
     peak_combined_rss_bytes: int = 0
     api_timings_ms: list[float] = Field(default_factory=lambda: list[float]())
     api_timing_note: str = "Actual ASGI HTTP transport including queue, decode, alignment, inference and artifact storage; excludes TCP"
@@ -222,17 +259,33 @@ def evaluate_one(
         raise ValueError("No held-out samples")
     started = time.perf_counter_ns()
     bundle = load_model(model_directory, token)
-    first = contained(root, samples[0].image_path)
-    bundle.inspect(decode_image(first), inspect_input(first))
-    cold = (time.perf_counter_ns() - started) / 1e6
-    for _ in range(3):
-        bundle.inspect(decode_image(first), inspect_input(first))
+    cold: float | None = None
+    warmup_path: Path | None = None
+    timing_reason: str | None = None
+    for sample in samples:
+        try:
+            candidate = contained(root, sample.image_path)
+            bundle.inspect(decode_image(candidate), inspect_input(candidate))
+            cold = (time.perf_counter_ns() - started) / 1e6
+            warmup_path = candidate
+            break
+        except (OSError, ValueError, RuntimeError, cv2.error, DomainError):
+            continue
+    if warmup_path is None:
+        timing_reason = "No usable held-out sample for cold inference or warmup"
+    else:
+        try:
+            for _ in range(3):
+                bundle.inspect(decode_image(warmup_path), inspect_input(warmup_path))
+        except (OSError, ValueError, RuntimeError, cv2.error, DomainError):
+            timing_reason = "Warmup failed; per-sample errors remain in the report"
     rows: list[PredictionRow] = []
     output.mkdir(parents=True, exist_ok=True)
     gallery = output / "failure-gallery"
     gallery.mkdir(exist_ok=True)
     for sample in samples:
         begin = time.perf_counter_ns()
+        artifact_name = hashlib.sha256(sample.id.encode()).hexdigest()
         row = PredictionRow(
             sample_id=sample.id,
             specimen_id=sample.specimen_id,
@@ -257,11 +310,14 @@ def evaluate_one(
             inferred = time.perf_counter_ns()
             row.decision = decide(result.score, model.calibration, result.reasons)
             row.score = None if result.reasons else result.score
-            row.binary_fail = not result.reasons and result.score >= model.calibration.high
+            row.raw_score = result.score
+            row.binary_fail = threshold_prediction(result.score, model.calibration.high)
             row.reasons = list(result.reasons)
             from defect_lens.worker import persist_prepared
 
-            persist_prepared(bundle, prepared, result, row.decision, output, f"heldout-{sample.id}")
+            persist_prepared(
+                bundle, prepared, result, row.decision, output, f"heldout-{artifact_name}"
+            )
             stored = time.perf_counter_ns()
             row.timings_ms = {
                 "decode": (decoded - begin) / 1e6,
@@ -292,16 +348,13 @@ def evaluate_one(
                     predicted = values >= model.calibration.pixel_threshold
                     union = int(np.count_nonzero(predicted | actual))
                     row.iou = float(np.count_nonzero(predicted & actual)) / union if union else 1
-                ranked = actual.reshape(-1)[np.argsort(-values.reshape(-1), kind="stable")]
-                if np.count_nonzero(ranked):
-                    precision = np.cumsum(ranked) / (np.arange(len(ranked)) + 1)
-                    row.pixel_ap = float(precision[ranked].mean())
+                row.pixel_ap = pixel_average_precision(values, actual)
             if (
                 (sample.label == "good" and row.binary_fail)
                 or (sample.label == "defect" and not row.binary_fail)
                 or sample.label == "ambiguous"
             ):
-                Image.fromarray(prepared.rgb).save(gallery / f"{sample.id}.png")
+                Image.fromarray(prepared.rgb).save(gallery / f"{artifact_name}.png")
         except (OSError, ValueError, RuntimeError, cv2.error, DomainError):
             row.error = "Evaluation sample failed; report is incomplete"
         rows.append(row)
@@ -321,9 +374,10 @@ def evaluate_one(
             for value in sorted({str(getattr(r, field)) for r in rows})
         },
         cold_load_first_inference_ms=cold,
-        warm_latency_median_ms=float(np.median(latencies)) if latencies else 0,
-        warm_latency_p95_ms=float(np.percentile(latencies, 95)) if latencies else 0,
-        throughput_per_second=1000 * len(latencies) / sum(latencies) if sum(latencies) else 0,
+        warm_latency_median_ms=float(np.median(latencies)) if latencies else None,
+        warm_latency_p95_ms=float(np.percentile(latencies, 95)) if latencies else None,
+        throughput_per_second=1000 * len(latencies) / sum(latencies) if sum(latencies) else None,
+        timing_unavailable_reason=timing_reason,
     )
 
 
@@ -335,16 +389,27 @@ def evaluate(
     dataset_root: Path,
     model_directories: Sequence[Path],
     lease_path: Path = DEFAULT_LEASE,
+    _lease_handle: LeaseHandle | None = None,
 ) -> EvaluationReport:
     if len(models) != len(model_directories) or not models:
         raise ValueError("Explicit model directories required")
     for model in models:
         verify_provenance(dataset, model, dataset_root)
-    output.mkdir(parents=True, exist_ok=False)
-    frozen = output / "split-manifest.json"
-    frozen.write_text(dataset.model_dump_json(indent=2) + "\n")
     methods: list[MethodReport] = []
-    with MachineLease(lease_path).acquire("complete frozen comparison benchmark") as handle:
+    if _lease_handle is not None and (
+        _lease_handle.path.resolve() != lease_path.resolve()
+        or not token_matches(lease_path, _lease_handle.token)
+    ):
+        raise LeaseBusy("Comparison requires the matching owned lease")
+    context = (
+        nullcontext(_lease_handle)
+        if _lease_handle is not None
+        else MachineLease(lease_path).acquire("complete frozen comparison benchmark")
+    )
+    with context as handle:
+        output.mkdir(parents=True, exist_ok=False)
+        frozen = output / "split-manifest.json"
+        frozen.write_text(dataset.model_dump_json(indent=2) + "\n")
         for model, directory in zip(models, model_directories, strict=True):
             destination = output / model.method
             command = [
@@ -375,13 +440,13 @@ def evaluate(
             thread = threading.Thread(target=monitor, daemon=True)
             thread.start()
             try:
-                subprocess.run(command, check=True)
+                run_model_process(command)
                 report = MethodReport.model_validate_json(
                     (destination / "method-report.json").read_bytes()
                 )
                 # API timing runs in a separate process after the pipeline model exits.
                 if lease_path == DEFAULT_LEASE:
-                    subprocess.run([*command, "--api"], check=True)
+                    run_model_process([*command, "--api"])
                     report.api_timings_ms = json.loads(
                         (destination / "api-timing.json").read_bytes()
                     )

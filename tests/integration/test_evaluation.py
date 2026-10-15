@@ -53,3 +53,111 @@ def test_decode_failure_is_retained_in_incomplete_report(tmp_path: Path) -> None
     assert not report.complete
     assert len(report.methods[0].rows) == 15
     assert report.methods[0].metrics.failures == 1
+
+
+def test_busy_evaluation_leaves_no_output(tmp_path: Path) -> None:
+    from defect_lens.lease import LeaseBusy, MachineLease
+
+    dataset = make_dataset(tmp_path / "data")
+    model = prepare_model(tmp_path / "data/manifest.json", "difference", tmp_path / "model")
+    lease = tmp_path / "lease"
+    with MachineLease(lease).acquire("test owner"):
+        with pytest.raises(LeaseBusy):
+            evaluate(
+                dataset,
+                [model],
+                tmp_path / "report",
+                dataset_root=tmp_path / "data",
+                model_directories=[tmp_path / "model"],
+                lease_path=lease,
+            )
+        assert not (tmp_path / "report").exists()
+
+
+@pytest.mark.parametrize("identifier", ["/tmp/defect-lens-review-probe", "../../escape"])
+def test_sample_ids_never_become_filesystem_paths(tmp_path: Path, identifier: str) -> None:
+    if identifier.startswith("/"):
+        identifier = str(tmp_path / "absolute-probe")
+    data = make_dataset(tmp_path / "data")
+    sample = next(s for s in data.samples if s.split == "test" and s.label == "ambiguous")
+    sample.id = identifier
+    model = prepare_model(tmp_path / "data/manifest.json", "difference", tmp_path / "model")
+    report = evaluate(
+        data,
+        [model],
+        tmp_path / "report",
+        dataset_root=tmp_path / "data",
+        model_directories=[tmp_path / "model"],
+        lease_path=tmp_path / "lease",
+    )
+    assert report.complete
+    gallery = list((tmp_path / "report/difference/failure-gallery").glob("*.png"))
+    assert len(gallery) == 3
+    assert all(len(path.stem) == 64 for path in gallery)
+    assert not (tmp_path / "escape.png").exists()
+
+
+def test_first_corrupt_sample_still_produces_incomplete_report(tmp_path: Path) -> None:
+    from defect_lens.manifests import file_hash
+
+    data = make_dataset(tmp_path / "data")
+    model = prepare_model(tmp_path / "data/manifest.json", "difference", tmp_path / "model")
+    sample = next(s for s in data.samples if s.split == "test")
+    path = tmp_path / "data" / sample.image_path
+    path.write_bytes(b"corrupt initial test image")
+    sample.image_sha256 = file_hash(path)
+    report = evaluate(
+        data,
+        [model],
+        tmp_path / "report",
+        dataset_root=tmp_path / "data",
+        model_directories=[tmp_path / "model"],
+        lease_path=tmp_path / "lease",
+    )
+    assert not report.complete
+    assert len(report.methods[0].rows) == 15
+    assert report.methods[0].rows[0].error is not None
+
+
+def test_no_usable_test_image_reports_null_timings(tmp_path: Path) -> None:
+    from defect_lens.manifests import file_hash
+
+    data = make_dataset(tmp_path / "data")
+    model = prepare_model(tmp_path / "data/manifest.json", "difference", tmp_path / "model")
+    for sample in data.samples:
+        if sample.split == "test":
+            path = tmp_path / "data" / sample.image_path
+            path.write_bytes(b"corrupt declared image")
+            sample.image_sha256 = file_hash(path)
+    report = evaluate(
+        data,
+        [model],
+        tmp_path / "report",
+        dataset_root=tmp_path / "data",
+        model_directories=[tmp_path / "model"],
+        lease_path=tmp_path / "lease",
+    )
+    assert not report.complete and len(report.methods[0].rows) == 15
+    assert report.methods[0].cold_load_first_inference_ms is None
+    assert report.methods[0].warm_latency_p95_ms is None
+    assert report.methods[0].timing_unavailable_reason is not None
+
+
+def test_comparison_can_borrow_an_owned_lease_without_releasing_it(tmp_path: Path) -> None:
+    from defect_lens.lease import MachineLease
+
+    data = make_dataset(tmp_path / "data")
+    model = prepare_model(tmp_path / "data/manifest.json", "difference", tmp_path / "model")
+    lease = tmp_path / "lease"
+    with MachineLease(lease).acquire("whole refresh and comparison") as handle:
+        report = evaluate(
+            data,
+            [model],
+            tmp_path / "report",
+            dataset_root=tmp_path / "data",
+            model_directories=[tmp_path / "model"],
+            lease_path=lease,
+            _lease_handle=handle,
+        )
+        assert report.complete and lease.exists()
+    assert not lease.exists()

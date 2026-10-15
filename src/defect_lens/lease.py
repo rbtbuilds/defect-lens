@@ -1,5 +1,9 @@
 import json
 import os
+import signal
+import subprocess
+import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -9,6 +13,10 @@ from uuid import uuid4
 import psutil
 
 DEFAULT_LEASE = Path("/tmp/bentolabs-portfolio-ml.lock")
+
+
+class ModelProcessCleanupError(RuntimeError):
+    pass
 
 
 class LeaseBusy(RuntimeError):
@@ -32,6 +40,8 @@ class LeaseHandle:
         return self
 
     def __exit__(self, *_args: object) -> None:
+        if len(_args) > 1 and isinstance(_args[1], ModelProcessCleanupError):
+            return
         self.close_after_worker_exit()
 
 
@@ -81,3 +91,47 @@ class MachineLease:
             self.path.rmdir()
             raise
         return LeaseHandle(self.path, token)
+
+
+def run_model_process(command: Sequence[str]) -> None:
+    process = subprocess.Popen(list(command), start_new_session=True, cwd=Path.cwd())
+    identity = psutil.Process(process.pid).create_time()
+    try:
+        code = process.wait()
+        if code:
+            raise subprocess.CalledProcessError(code, list(command))
+    finally:
+        try:
+            leader = psutil.Process(process.pid)
+            if abs(leader.create_time() - identity) > 0.01:
+                raise ModelProcessCleanupError(
+                    "Model process identity changed; retain lease for inspection"
+                )
+        except psutil.NoSuchProcess:
+            pass
+        if process.poll() is not None:
+            time.sleep(0.1)
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait()
+        deadline = time.monotonic() + 5
+        while True:
+            live: list[int] = []
+            for member in psutil.process_iter():
+                try:
+                    if (
+                        os.getpgid(member.pid) == process.pid
+                        and member.status() != psutil.STATUS_ZOMBIE
+                    ):
+                        live.append(member.pid)
+                except (OSError, psutil.Error):
+                    pass
+            if not live:
+                break
+            if time.monotonic() > deadline:
+                raise ModelProcessCleanupError(
+                    "Owned model descendants did not exit; lease retained"
+                )
+            time.sleep(0.02)

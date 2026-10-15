@@ -78,6 +78,8 @@ def persist_prepared(
     root: Path,
     job_id: str,
 ) -> StoredResult:
+    if Path(job_id).name != job_id or job_id in {".", ".."}:
+        raise ValueError("Artifact identifier must be one safe path component")
     directory = root / "outputs" / job_id
     directory.mkdir(parents=True, exist_ok=False)
     stage = directory / "aligned.part"

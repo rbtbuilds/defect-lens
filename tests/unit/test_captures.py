@@ -70,3 +70,16 @@ def test_overlap_fixture_and_cause_claims_rejected(tmp_path: Path) -> None:
     assert "AMBIGUOUS_LABEL" in {
         issue.code for issue in validate_captures(data, tmp_path / "cause").issues
     }
+
+
+def test_capture_label_and_kind_must_agree(tmp_path: Path) -> None:
+    data = capture_schema(tmp_path)
+    missing = next(s for s in data.samples if s.defect_kind == "missing_fastener")
+    missing.label = "good"
+    result = validate_captures(data, tmp_path)
+    assert not result.valid
+    assert "LABEL_KIND_CONFLICT" in {issue.code for issue in result.issues}
+    missing.label = "defect"
+    good = next(s for s in data.samples if s.split == "validation" and s.defect_kind == "none")
+    good.label = "defect"
+    assert not validate_captures(data, tmp_path).valid

@@ -1,6 +1,6 @@
 # Local runbook
 
-Run every command from this repository's Git root. Python is 3.12 via uv; CI uses Node 24. This Mac uses Node 26.7.0, tested against Vite's >=22.12 engine requirement because no Node 24 manager was available. Dependencies are local and locked. No global runtime changes or cloud keys are needed.
+Run every command from this repository's Git root. Python is 3.12 via uv; CI uses Node 24. This Mac uses Node 26.7.0, tested against Vite's >=22.12 engine requirement because no Node 24 manager was available. Dependencies are local and locked. Numeric limits apply within these processes before library imports: BLAS/OpenCV threads 1; the CPU feature encoder uses torch threads 2. No global runtime changes or cloud keys are needed.
 
 ```bash
 uv sync --locked --extra features
@@ -19,7 +19,7 @@ uv run python scripts/dev.py status
 uv run python scripts/dev.py stop
 ```
 
-The helper records owned PIDs, random tokens and process-start identities in .runtime/dev-processes.json and writes separate local logs. Stop checks every identity before signalling. A changed identity is an error, never permission to kill a reused PID. The API drains a running job for up to five seconds, then stops/joins its child. Queued work stays queued; unfinished running work becomes failed INTERRUPTED, never automatically retried. Deliberately choose the image and submit again for a new request key. No per-job cancellation endpoint exists.
+The helper records owned PIDs, random tokens and process-start identities in .runtime/dev-processes.json and writes separate local logs. Stop checks every identity before signalling. A changed identity is an error, never permission to kill a reused PID. The API drains a running job for up to five seconds, then stops/joins its child. Queued work for the selected revision stays queued; unfinished running work becomes failed INTERRUPTED, never automatically retried. Once a different verified model becomes ready, incompatible queued jobs become failed MODEL_CHANGED, retaining their original revision/input. This prevents a permanently full queue without processing an image under the wrong model. Deliberately choose the image and submit again for a new request key. No per-job cancellation endpoint exists.
 
 ## Models and the machine lease
 
@@ -50,11 +50,11 @@ Batch accepts at most 100 manifest rows with paths contained in the manifest dir
 
 ```bash
 uv run defect-lens batch --manifest .runtime/data/batch/manifest.json --api http://127.0.0.1:8111 --output .runtime/outputs/batch.jsonl
-uv run defect-lens benchmark --dataset .runtime/data/fixtures/manifest.json --difference-model .runtime/models/demo-difference --patch-model .runtime/models/demo-patch --output .runtime/outputs/fixture-evaluation
+uv run --extra features defect-lens benchmark --prepare --dataset .runtime/data/fixtures/manifest.json --difference-model .runtime/models/demo-difference --patch-model .runtime/models/demo-patch --output .runtime/outputs/fixture-evaluation
 uv run defect-lens export-report --input .runtime/outputs/fixture-evaluation --output reports/fixture-v1
 ```
 
-Choose new output directories for a new benchmark/curated revision. Never overwrite frozen evidence. Reports include actual failures, thresholds, source/model/lock/data hashes, hardware, cold/warm and stage timings, process-tree RSS and separate operational metrics. API timing uses actual ASGI requests and a child worker, excluding TCP. Pretrained execution on procedural inputs is not owned-photo validation. Follow CAPTURE-GUIDE for a separate photographic study.
+The --prepare benchmark option refreshes selected models and compares them under one lease, avoiding a release/reacquire gap. Model runner process groups contain only their own descendants; interrupted runners stop them before release, and a cleanup failure retains the lease for manual inspection. Choose new output directories for a new benchmark/curated revision. Never overwrite frozen evidence. Reports include actual failures, thresholds, source/model/lock/data hashes, hardware, cold/warm and stage timings, process-tree RSS and separate operational metrics. API timing uses actual ASGI requests and a child worker, excluding TCP. Pretrained execution on procedural inputs is not owned-photo validation. Follow CAPTURE-GUIDE for a separate photographic study.
 
 With both owned servers stopped:
 

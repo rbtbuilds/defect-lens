@@ -104,7 +104,11 @@ export default function App() {
     if (inspection)
       void api
         .inspection(inspection.id)
-        .then(setInspection)
+        .then((fresh) =>
+          setInspection((current) =>
+            current?.id === fresh.id ? fresh : current,
+          ),
+        )
         .catch((e) => setError(errorText(e)));
   }
   return (

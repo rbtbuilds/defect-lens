@@ -1,6 +1,6 @@
 # Defect Lens evaluation design
 
-Status: frozen evaluation tooling and metric/provenance tests implemented. Actual pretrained execution passed. The full measured fixture comparison is pending the shared ML lease; no owned-photo study has run. See [current evidence](docs/STATE.md).
+Status: measured frozen comparison completed on original procedural inputs; actual pretrained execution verified. No owned-photo study has run. See the [report](reports/fixture-v1/report.md), [raw predictions and provenance](reports/fixture-v1/report.json) and [verification state](docs/STATE.md).
 
 ## Baseline and split
 
@@ -17,3 +17,9 @@ Start the application from a clean checkout. Submit a good image, a known defect
 ## Release evidence
 
 Save a split manifest, image provenance, model revision, configuration, environment and measured results. Publish a failure gallery using owned images. A synthetic-only result supports a fixture demonstration, not industrial accuracy. No numerical quality target has been measured or promised.
+
+## Observed fixture results
+
+Each method processed 90 held-out images: 36 good, 36 known defects, 18 ambiguous. Both had precision/recall 1.0, zero false rejects and zero missed labelled defects at the frozen high threshold. Operational review burden was 23.3% for difference and 60.0% for ResNet18 patch; all 18 ambiguous images were reviewed by each method. Mean defect-mask IoU was 1.000 versus 0.213. Warm pipeline p95 was 16.51 ms versus 32.29 ms on the observed Apple M5 Pro/24 GiB CPU setup. This includes decode/alignment/scoring/artifact storage; separate ASGI API measurements include queueing and exclude TCP. Peak combined benchmark process-tree RSS was 259.1 MiB versus 586.8 MiB.
+
+The procedural geometry is deliberately simple and generated groups are not independently photographed specimens. These results are a reproducibility demonstration, not industrial accuracy. The report preserves all 180 prediction rows, stage timings, source/lock/model/data/config hashes and specimen-group bootstrap. Its 36 gallery images are reviewed original blur examples; there were no labelled binary misses/false rejects to illustrate.

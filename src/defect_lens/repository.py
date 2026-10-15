@@ -221,6 +221,21 @@ class Repository:
             if changed != 1:
                 raise DomainError("STATE_CONFLICT", "Job is already terminal", 409)
 
+    def fail_incompatible_queued(self, revision: str) -> int:
+        with connect(self.settings.database_path) as connection:
+            rows = connection.execute(
+                "SELECT id FROM jobs WHERE status='queued' AND model_revision!=?", (revision,)
+            ).fetchall()
+        for row in rows:
+            self.fail(
+                row["id"],
+                JobError(
+                    code="MODEL_CHANGED",
+                    message="Queued input belongs to another frozen revision; deliberately resubmit for the selected model",
+                ),
+            )
+        return len(rows)
+
     def recover_interrupted(self) -> int:
         with connect(self.settings.database_path) as connection:
             rows = connection.execute("SELECT id FROM jobs WHERE status='running'").fetchall()

@@ -8,6 +8,8 @@ from numpy.typing import NDArray
 from defect_lens.contracts import InputMetadata
 from defect_lens.imaging import RgbFrame
 
+cv2.setNumThreads(1)
+
 
 @dataclass(frozen=True)
 class PreparedFrame:

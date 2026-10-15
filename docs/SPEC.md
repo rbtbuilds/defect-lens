@@ -1,6 +1,6 @@
 # Defect Lens v1 specification
 
-Status: approved planning scope for implementation when Matthew pastes CHAT-HANDOFF.md. Code, tests, weights and measured results do not exist yet. Read EVALUATION.md alongside this specification; its evidence requirements remain in force.
+Status: implemented v1 contract. Read EVALUATION.md and STATE for actual verification and measured evidence; this specification defines behavior rather than proving it.
 
 ## Product and claim
 
@@ -133,7 +133,7 @@ SQLite uses WAL, foreign_keys=ON, busy_timeout=5000 and versioned transactional 
 
 Admission reserves capacity transactionally and deduplicates by idempotency key plus request hash (raw SHA, model revision and data_mode). Same key/same request returns the original job before checking current readiness or capacity; changed request is 409. Review replay checks an existing key/hash before the expected_version check, so a successful retry does not conflict with its own version increment. File promotion uses task-owned UUID paths and atomic rename. A success transaction inserts the unique inspection and changes running->succeeded together. A process crash before commit leaves an interrupted job, never a second review entry. Failures release unused reserved bytes while retaining actual input/artifact accounting.
 
-On API startup obtain the per-project server ownership lock; refuse a second server. Recover running->failed with INTERRUPTED, leave queued jobs queued, then start worker. Do not silently retry interrupted inspections. A user may deliberately resubmit with a fresh key. Startup inspects only temporary files in its own .runtime/tmp directory; report unreferenced completed artifacts for manual cleanup instead of broad deletion.
+On API startup obtain the per-project server ownership lock; refuse a second server. Recover running->failed with INTERRUPTED, leave queued jobs queued for the selected revision, then start worker. After a different selected revision is verified ready, fail incompatible queued jobs with MODEL_CHANGED while retaining their original model/input; never process them under the new model or let them permanently occupy admission capacity. Do not silently retry interrupted inspections. A user may deliberately resubmit with a fresh key. Startup inspects only temporary files in its own .runtime/tmp directory; report unreferenced completed artifacts for manual cleanup instead of broad deletion.
 
 There is no per-job cancellation endpoint in v1. Interrupt testing stops the owned worker/server and verifies durable recovery; the UI does not advertise a cancel action. Graceful shutdown stops admission, allows current job up to five seconds, then terminates only its child, marks unfinished running work INTERRUPTED and retains queued work. Confirm child exit before releasing the machine lease or server lock. OS hard-kill is covered by next-start recovery.
 

@@ -60,6 +60,14 @@ def validate_captures(manifest: DatasetManifest, root: Path) -> CaptureValidatio
                 raise ValueError("Timezone required")
         except ValueError:
             add("CAPTURE_TIME_INVALID", "Record an actual timezone-aware capture timestamp")
+        expected_label = {
+            "none": "good",
+            "missing_fastener": "defect",
+            "surface_mark": "defect",
+            "quality": "ambiguous",
+        }[sample.defect_kind]
+        if sample.label != expected_label:
+            add("LABEL_KIND_CONFLICT", "Label must agree with observed defect kind and annotation")
         review = sample.capture_review
         if review is None or not review.physical_specimen_confirmed:
             add("REVIEW_MISSING", "Human reviewer must confirm specimen identity and setup")

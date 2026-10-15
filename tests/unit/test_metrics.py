@@ -63,3 +63,29 @@ def test_undefined_and_ambiguous_are_explicit() -> None:
     assert metrics.precision is None and metrics.recall is None
     assert metrics.labelled_count == 0 and metrics.ambiguous_count == 1
     assert metrics.review_burden == 1
+
+
+def test_binary_threshold_is_independent_of_quality_review() -> None:
+    from defect_lens.evaluation import threshold_prediction
+    from defect_lens.inference.calibration import Calibration, decide
+
+    config = Calibration(
+        low=0.1,
+        high=0.5,
+        pixel_threshold=None,
+        heatmap_display_max=1,
+        validation_manifest_sha="a" * 64,
+    )
+    assert decide(0.9, config, ("blur",)) == "review"
+    assert threshold_prediction(0.9, config.high)
+
+
+def test_pixel_ap_groups_tied_thresholds() -> None:
+    import numpy as np
+
+    from defect_lens.evaluation import pixel_average_precision
+
+    scores = np.ones(4, dtype=np.float32)
+    assert pixel_average_precision(scores, np.array([True, True, False, False])) == 0.5
+    assert pixel_average_precision(scores, np.array([False, False, True, True])) == 0.5
+    assert pixel_average_precision(scores, np.zeros(4, dtype=np.bool_)) is None

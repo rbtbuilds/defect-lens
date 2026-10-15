@@ -93,3 +93,38 @@ def test_concurrent_admission_respects_capacity(tmp_path: Path) -> None:
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(admit, range(2)))
     assert sorted(results) == ["QUEUE_FULL", "accepted"]
+
+
+def test_model_change_terminalizes_incompatible_queue(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    from defect_lens.fixtures import generate_fixtures
+    from defect_lens.supervisor import Supervisor
+    from tests.integration.test_supervisor import wait_until
+
+    repo = prepared_repo(tmp_path, max_pending=1)
+    old, _ = enqueue(repo)
+    generate_fixtures(tmp_path / "new-data", seed=19, specimens_per_split=1)
+    new = prepare_model(tmp_path / "new-data/manifest.json", "difference", tmp_path / "new-model")
+    supervisor = Supervisor(replace(repo.settings, model_dir=tmp_path / "new-model"), repo)
+    supervisor.start()
+    try:
+        wait_until(lambda: supervisor.ready.status == "ready")
+        old_job = repo.get_job(old.id)
+        assert old_job.status == "failed"
+        assert old_job.error is not None and old_job.error.code == "MODEL_CHANGED"
+        assert old_job.model_revision == old.model_revision
+        path, _ = repo.input_for(old.id)
+        accepted = AcceptedInput(
+            normalized_path=path,
+            metadata=InputMetadata(raw_sha256="b" * 64, width=256, height=256, aspect_ratio=1),
+        )
+        current, _ = repo.enqueue(
+            accepted,
+            UploadForm(model_revision=new.revision, data_mode="procedural"),
+            str(uuid4()),
+            "b" * 64,
+        )
+        assert current.model_revision == new.revision
+    finally:
+        supervisor.shutdown()

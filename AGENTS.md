@@ -10,7 +10,7 @@ Do not edit siblings, parent coordination files, the resume workspace, vault, re
 
 ## Execution discipline
 
-The current deliverable is planning only. Implementation starts when Matthew pastes CHAT-HANDOFF's execution prompt. Use native superpowers:executing-plans, work task by task, and update STATE with exact commands/outcomes. Do not repeat discovery for settled product choices or automatically delegate a chain of agents. Read the files/callers/tests being changed before editing. Keep source and prose ASCII.
+The v1 implementation is authorized and tracked in docs/STATE.md. Resume from that state and Git evidence; do not restart completed tasks. Use native superpowers:executing-plans, work task by task, and update STATE with exact commands/outcomes. Do not repeat discovery for settled product choices or automatically delegate a chain of agents. Read the files/callers/tests being changed before editing. Keep source and prose ASCII.
 
 The first word of every user-facing reply is Matthew. Before the first tool call say what will happen in one sentence. Report measured outcomes, skipped checks and remaining evidence precisely; a file's existence is not a passing test.
 

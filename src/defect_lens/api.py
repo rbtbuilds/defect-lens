@@ -100,8 +100,13 @@ def create_app(settings: Settings) -> FastAPI:
 
     @app.get("/healthz")
     def health() -> dict[str, str]:
-        with sqlite3.connect(settings.database_path) as connection:
-            connection.execute("SELECT 1").fetchone()
+        try:
+            with sqlite3.connect(settings.database_path) as connection:
+                connection.execute("SELECT 1").fetchone()
+        except sqlite3.Error as error:
+            raise DomainError(
+                "DATABASE_UNAVAILABLE", "Database health probe failed", 503, True
+            ) from error
         return {"status": "ok", "database": "ok"}
 
     @app.get("/readyz")

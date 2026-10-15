@@ -156,10 +156,11 @@ class Supervisor:
                     while True:
                         event = self.outbound.get_nowait()
                         if event.kind == "ready":
-                            self.ready.status = "ready"
-                            self.ready.reason = None
                             if self.manifest and self.accepting:
+                                self.repository.fail_incompatible_queued(self.manifest.revision)
                                 self.repository.set_ready(self.manifest.revision)
+                                self.ready.status = "ready"
+                                self.ready.reason = None
                         elif (
                             event.kind == "complete"
                             and event.result is not None

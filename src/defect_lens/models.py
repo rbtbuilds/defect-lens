@@ -108,6 +108,7 @@ def inference_source_hash() -> str:
         *[
             root / name
             for name in [
+                "__init__.py",
                 "models.py",
                 "imaging.py",
                 "manifests.py",
@@ -175,10 +176,10 @@ def prepare_model(
     dataset: Path, method: Method, output: Path, *, _lease_token: str | None = None
 ) -> ModelManifest:
     if method == "resnet18_patch" and _lease_token is None:
-        from defect_lens.lease import MachineLease
+        from defect_lens.lease import MachineLease, run_model_process
 
         with MachineLease().acquire("pretrained feature preparation") as handle:
-            subprocess.run(
+            run_model_process(
                 [
                     sys.executable,
                     "-m",
@@ -187,7 +188,6 @@ def prepare_model(
                     str(output.resolve()),
                     handle.token,
                 ],
-                check=True,
             )
         return read_model_manifest(output)
     if method == "resnet18_patch":

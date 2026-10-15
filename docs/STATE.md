@@ -1,51 +1,53 @@
 # Defect Lens state
 
-Updated: 2026-10-15. Implementation in progress on feat/defect-lens-v1.
-Git root and working directory verified as /Users/matthewgoralczyk/BentoLabs/portfolio/defect-lens.
+Updated: 2026-10-15. Implementation and final regression pass complete on `feat/defect-lens-v1`.
+Working directory and Git root: `/Users/matthewgoralczyk/BentoLabs/portfolio/defect-lens`.
 
 ## Task ledger
 
 | Task | State | Evidence |
 | --- | --- | --- |
-| 1. Bootstrap | Complete | d6a1702; Python 3.12.14, Node 26.7.0 compatibility exception, isolated locks and dependencies. |
-| 2. Fixtures/decoder | Complete | 91d0139; 216 original procedural samples, 36 good train, repeat generation matches. |
-| 3. Difference/calibration | Complete | 19 tests pass; good/pass, missing/fail, blur/review in actual pipeline test. |
-| 4. Pretrained/lease | Complete | 23 light tests and actual pretrained integration pass; 45 MiB checkpoint verified and local only. |
-| 5. Durable workflow | Complete | 30 light tests pass; actual child inference, timeout/restart budget, memory monitor, atomic rollback and corrections. |
-| 6. API/batch | Complete | Actual five-image HTTP batch: 5 succeeded,0 failed. Upload/replay/review/queue tests and generated contract checks pass. |
-| 7. Interface | Complete | 7 Vitest tests, strict TypeScript/build and 5 actual API Playwright tests pass; desktop/mobile both palettes inspected. |
-| 8. Evaluation | In progress | Metrics/provenance/failure tests pass; refreshed full benchmark pending shared ML lease (Casework evaluation owns it). |
-| 9. Capture gate | Complete | Validator tests and guide complete; no owned photographs supplied, no photo metrics. |
-| 10. Release verification | In progress | Full verify passed:48 Python,7 UI,5 browser,1 restart; clean clone and final review pending. |
+| 1. Bootstrap | Complete | Isolated uv/npm environments, exact locks, Python 3.12.14. Tested Node 26.7.0 exception; CI Node 24. |
+| 2. Fixtures/decoder | Complete | 216 original images; repeatable 36 train / 90 validation / 90 test split; bounded PNG/JPEG decoding. |
+| 3. Difference/calibration | Complete | Validation-only calibration, frozen source/data/artifact identity; actual good/defect/blur workflow. |
+| 4. Pretrained/lease | Complete | Actual ResNet18 layer2 execution, verified public checkpoint, owned process exit before lease release. |
+| 5. Durable workflow | Complete | Transactional admission/completion, quotas, worker time/RSS/restart limits, append-only corrections. |
+| 6. API/batch | Complete | Real HTTP batch and API tests; bounded upload, replay, conflict, failure and generated-contract checks. |
+| 7. Interface | Complete | Strict TypeScript, 8 UI tests and 5 actual-API browser tests; desktop/mobile, both palettes and keyboard flow. |
+| 8. Evaluation | Complete | Two actual frozen methods, 90 held-out images each; curated report, raw rows, provenance and reviewed gallery. |
+| 9. Capture gate | Complete as no-run gate | Validated capture schema/guide. No owned photographs supplied; no photo accuracy claim. |
+| 10. Release verification | Final exact-source clone pending | Full local verification passed after review fixes; final clone will be recorded below. |
 
-## Verification
+## Verification and reproduction
 
-Task 1: config/health RED to GREEN; strict Python and TypeScript and web build passed.
-Task 2: manifests/decoder RED to GREEN; full suite 10 passed; CLI fixtures and fixtures-repeat each 216 samples; strict checks passed.
-Task 3: missing implementation RED, then import-path correction (pytest pythonpath=['.']); full suite 19 passed, Ruff and strict Pyright passed. `uv run defect-lens prepare --method difference --dataset .runtime/data/fixtures/manifest.json --output .runtime/models/demo-difference` succeeded. Tests verify checksum tampering, no held-out image reads, repeated revision reuse and preservation after configuration identity change. Git provenance is outside revision identity.
+`uv run python scripts/verify.py --fixture-only` passed all 14 commands: Ruff, formatting, strict Pyright including tests/scripts, 62 Python unit/integration tests (one real-model test deselected), strict TypeScript including tests/configuration, 8 Vitest tests, production build, fixture/model preparation, 5 actual-API Playwright tests and 1 actual restart/interrupted-worker test. The latter saves a correction, restarts, retrieves it, and verifies unfinished work becomes INTERRUPTED without duplicate reviews. Oversized/corrupt inputs, process ownership and occupied-port refusal are covered. Logs: `.runtime/final-verification.log` and `.runtime/verification.json`.
 
-## Decisions
+`uv run pytest tests/integration/test_feature_prepare.py -m real_model -q` separately passed one actual pretrained test after final inference changes. It verifies shape, finite varied scores, full checkpoint hash and worker exit. Log: `.runtime/final-real-model.log`.
 
-Use the assigned isolated child repository directly. Node 24 unavailable locally; Vite engine >=22.12 supports installed Node 26.7.0, while CI targets 24. pytest temporary files stay under .runtime/pytest to avoid shared test-root cleanup. PreparedFrame retains the ECC transform to align validation masks consistently.
+Final measured command:
 
-## Evidence gates
+```bash
+uv run defect-lens benchmark --prepare --dataset .runtime/data/fixtures/manifest.json --difference-model .runtime/models/demo-difference --patch-model .runtime/models/demo-patch --output .runtime/outputs/fixture-evaluation
+uv run defect-lens export-report --input .runtime/outputs/fixture-evaluation --output reports/fixture-v1
+```
 
-Procedural software workflow: in progress. Actual pretrained execution: passed real ResNet18 layer2 shape, finite varied scores and full checkpoint hash checks. Comparison remains pending. Owned-photo evaluation: not run; no capture set supplied. Screen reader: not tested. No publishing, push, deployment, paid compute or external sends authorized.
+One token/identity-checked machine lease covered preparation, both model processes and the whole comparison. Child process groups exited before release. No threshold was tuned on held-out images. Hardware: Apple M5 Pro, 24 GiB, macOS 26.5.1 arm64, CPU; Python 3.12.14. Log: `.runtime/benchmark.log`.
 
-## Next action
+## Measured evidence
 
-Task 8 measured run pending shared lease; continue Task 10 independent runbook work. No lease is stolen or polled in a loop.
+Each method evaluated 36 good, 36 known-defect and 18 ambiguous test images. Both binary precision/recall were 1.0, with no false rejects or missed labelled defects; all ambiguous images required review. Difference required 21/90 reviews (23.3%), versus 54/90 (60.0%) for ResNet18 patch. Mean defect-mask IoU: 1.000 versus 0.213; pixel AP: 1.000 versus 0.293. Warm pipeline p95: 16.51 ms versus 32.29 ms. Cold load plus first inference: 12.67 ms versus 1199.84 ms. Peak combined benchmark process-tree RSS: 259.1 MiB versus 586.8 MiB. Separate API measurements use actual ASGI and supervised inference, include queueing, and exclude TCP.
 
-Task 7: `npm --prefix web run typecheck`, `test -- --run` (7 tests), `build` and `test:e2e` (5 tests) passed. Actual browser uploads good/missing/blur, adjusts overlay with keyboard, saves correction and retrieves after reload. Selected-job reselection bug reproduced RED then fixed GREEN. Browser checks 390px/1280px light/dark, keyboard correction/theme and reduced motion, no horizontal overflow and muted-text contrast >=4.5. Screenshots .runtime/screenshots reviewed for alignment/spacing/detail. Chromium installed by Playwright locally; screen-reader testing not performed.
+- Difference revision: `c25f014f92c51762c4920972e91c21db1715444e2a969a78870f272a1ef40dee`.
+- Patch revision: `8208eec4bf15e320df0f6e9ef2cd0a4ba13476bf032c3f0e743fa508dc149311`.
+- Curated report: `reports/fixture-v1/report.json`; SHA256 `c51bb924255675f0be253e36506f69f0e23dc19550aa1402e3e07dea68b5ffaf`.
+- Report Markdown, split manifest and environment accompany all 180 raw rows. All 36 gallery images were inspected; they illustrate ambiguous blur, since there were no labelled binary errors.
 
-Task 6: focused HTTP tests passed (upload/replay/stale revision/origin, chunked and image caps, two-upload gate, 33rd job, review conflicts), generated OpenAPI/TypeScript consistency checked; strict Pyright/Ruff pass. Real server API8111 batch command submitted5/succeeded5/failed0, JSONL at .runtime/outputs/batch-task6.jsonl. Normalized duplicate/rejected artifacts are cleaned; originals never stored beyond request. Body bytes are capped before multipart parsing, whose bounded memory spool cannot spill into shared temporary storage.
+Procedural software evidence and actual pretrained execution are complete. Generated specimen groups are not independent photographed objects; these results support the local demonstration only. Owned-photo study: NOT RUN, no assets supplied. Screen reader: NOT TESTED. Arbitrary mirrored/rotated pose robustness: NOT CERTIFIED. No industrial deployment, customer impact or time saving is claimed.
 
-Task 5: `uv run --extra features pytest -m "not real_model" -q` ->30 passed,1 deselected; strict Pyright and Ruff pass. Spawned real difference worker completes exactly one inspection; timeout kills/join, one restart then degraded; 1 MiB test ceiling exercises RSS recovery. Competing admission respects one-slot capacity; a simulated post-artifact/pre-commit crash rolls back and startup marks INTERRUPTED. Correction replay/version conflict and reopen persistence pass. Server lock refuses a second owner. No feature worker remains resident.
+## Review, scope and integration
 
-Task 4 exact checks: `uv run --extra features pytest -m "not real_model" -q` (23 passed), `uv run --extra features pytest tests/integration/test_feature_prepare.py -m real_model -q` (1 passed), strict Pyright and Ruff passed. Feature prepare succeeded under the shared lease; the child exited before token-checked release. Weight origin/checksum is in MODEL-CARD and model manifest. No owned photographs were used. Narrow local torchvision signature stubs cover its untyped public entry points; no missing-import exclusion.
+One fresh reviewer found eight Important issues, no Critical or Minor findings. All eight were accepted and verified RED-to-GREEN in one fix pass; the complete suite passed afterward. No second review occurred. See `REVIEW.md` and the durable execution record for findings, decisions and costs. A path-escape reproduction initially wrote a test PNG under /tmp; its exact checksum was verified and only that probe removed. The regression now remains under this project's temporary directory.
 
-Task 9: capture validator RED missing module -> GREEN2tests, strict Pyright/Ruff pass. Covers rights/hash/group/session/fixture-source/staged-mark/ambiguous labels. No .runtime/data/captures directory exists. Preparation/evaluation preserve declared aligned-mask coordinates to avoid double warping.
+The first clean clone exposed missing runtime-directory initialization (37 test setup errors); the explicit initialization fix passed a separate clone at 316770e. That check predates final review fixes, so a new exact-source clone is required.
 
-Task 10 verification: `uv sync --locked --extra features`, `npm --prefix web ci`, then `uv run python scripts/verify.py --fixture-only` exit0. All14 recorded commands exit0 in .runtime/verification.json. Actual restart/correction/interrupted worker test passes; shutdown waits for recorded child exit. .runtime/final-verification.log holds full output. No owned API/web processes remain and reserved ports are free. Clean clone not run yet.
-
-Clean-clone first run47d97ae failed:37 pytest tmp_path setup errors because .runtime did not exist; verify artifact writing also failed. Fixed explicit pytest/verify runtime initialization; independent clone rerun pending. First failed clone remains ignored for diagnosis; no shared files deleted.
+All implementation and commits are local. No public repository, push, deployment, model upload, paid compute or external send occurred. No central registry/vault/parent/sibling record was modified. Integration owner: please record the verified outcome and remaining capture gate in the existing portfolio/operations record using its exact ID and current version; no record identity is assumed here. Keep this branch as-is for later publication approval.

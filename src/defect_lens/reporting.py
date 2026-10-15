@@ -24,8 +24,13 @@ def export_report(input: Path, output: Path) -> None:
     ]
     for method in report.methods:
         m = method.metrics
+        latency = (
+            f"{method.warm_latency_p95_ms:.2f}"
+            if method.warm_latency_p95_ms is not None
+            else "unavailable"
+        )
         lines.append(
-            f"| {method.model.method} | {m.precision} | {m.recall} | {m.false_reject_rate} | {m.missed_defect_rate} | {m.review_burden} | {method.warm_latency_p95_ms:.2f} |"
+            f"| {method.model.method} | {m.precision} | {m.recall} | {m.false_reject_rate} | {m.missed_defect_rate} | {m.review_burden} | {latency} |"
         )
         gallery = input / method.model.method / "failure-gallery"
         if gallery.exists():

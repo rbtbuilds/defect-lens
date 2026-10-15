@@ -22,6 +22,11 @@ def _main() -> None:
     parser.add_argument("--difference-model", type=Path)
     parser.add_argument("--patch-model", type=Path)
     parser.add_argument("--input", type=Path)
+    parser.add_argument(
+        "--prepare",
+        action="store_true",
+        help="Refresh selected models and benchmark under one owned lease",
+    )
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--api", default="http://127.0.0.1:8111")
     parser.add_argument("--dataset", type=Path)
@@ -67,13 +72,41 @@ def _main() -> None:
         if args.dataset is None or args.difference_model is None:
             parser.error("benchmark requires --dataset and --difference-model")
         directories = [args.difference_model] + ([args.patch_model] if args.patch_model else [])
-        report = evaluate(
-            load_manifest(args.dataset),
-            [read_model_manifest(path) for path in directories],
-            args.output,
-            dataset_root=args.dataset.parent,
-            model_directories=directories,
-        )
+        data = load_manifest(args.dataset)
+        if args.prepare:
+            from defect_lens.lease import MachineLease, run_model_process
+
+            with MachineLease().acquire(
+                "refresh and complete frozen comparison benchmark"
+            ) as handle:
+                prepare_model(args.dataset, "difference", args.difference_model)
+                if args.patch_model:
+                    run_model_process(
+                        [
+                            sys.executable,
+                            "-m",
+                            "defect_lens.feature_runner",
+                            str(args.dataset.resolve()),
+                            str(args.patch_model.resolve()),
+                            handle.token,
+                        ]
+                    )
+                report = evaluate(
+                    data,
+                    [read_model_manifest(path) for path in directories],
+                    args.output,
+                    dataset_root=args.dataset.parent,
+                    model_directories=directories,
+                    _lease_handle=handle,
+                )
+        else:
+            report = evaluate(
+                data,
+                [read_model_manifest(path) for path in directories],
+                args.output,
+                dataset_root=args.dataset.parent,
+                model_directories=directories,
+            )
         print(f"Complete: {report.complete}; {len(report.methods)} actual methods")
         raise SystemExit(0 if report.complete else 4)
     if args.command == "export-report":

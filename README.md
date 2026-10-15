@@ -40,6 +40,10 @@ The API bounds upload size, queue capacity, retained storage, job time and worke
 - [Runbook: setup, optional features, batch, quotas, lease and recovery](docs/RUNBOOK.md)
 - [Exported OpenAPI](docs/api/openapi.json), [specification](docs/SPEC.md) and [verification state](docs/STATE.md)
 
+## Observed procedural comparison
+
+Each method processed 90 held-out images: 36 good, 36 known defects and 18 ambiguous. Both detected all labelled defects without false rejects. Difference required 23.3% reviews versus 60.0% for the pretrained patch method, with mean mask IoU 1.000 versus 0.213 and warm pipeline p95 of 16.51 ms versus 32.29 ms. See the [full report](reports/fixture-v1/report.md) for hashes, timing scope, raw rows and limits. These easy procedural results cannot establish photographic accuracy.
+
 ## Verification
 
 Stop owned servers before checks; then:
