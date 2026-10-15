@@ -13,6 +13,10 @@ from tests.integration.test_supervisor import wait_until
 from tests.support import make_dataset
 
 
+def pytest_configure(config: pytest.Config) -> None:
+    (config.rootpath / ".runtime").mkdir(exist_ok=True)
+
+
 @pytest.fixture
 def good_png() -> bytes:
     stream = BytesIO()

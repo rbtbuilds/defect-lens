@@ -47,3 +47,5 @@ Task 4 exact checks: `uv run --extra features pytest -m "not real_model" -q` (23
 Task 9: capture validator RED missing module -> GREEN2tests, strict Pyright/Ruff pass. Covers rights/hash/group/session/fixture-source/staged-mark/ambiguous labels. No .runtime/data/captures directory exists. Preparation/evaluation preserve declared aligned-mask coordinates to avoid double warping.
 
 Task 10 verification: `uv sync --locked --extra features`, `npm --prefix web ci`, then `uv run python scripts/verify.py --fixture-only` exit0. All14 recorded commands exit0 in .runtime/verification.json. Actual restart/correction/interrupted worker test passes; shutdown waits for recorded child exit. .runtime/final-verification.log holds full output. No owned API/web processes remain and reserved ports are free. Clean clone not run yet.
+
+Clean-clone first run47d97ae failed:37 pytest tmp_path setup errors because .runtime did not exist; verify artifact writing also failed. Fixed explicit pytest/verify runtime initialization; independent clone rerun pending. First failed clone remains ignored for diagnosis; no shared files deleted.

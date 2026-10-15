@@ -12,6 +12,7 @@ def verify() -> None:
     from scripts.dev import check_ports, stop
 
     check_ports()
+    (ROOT / ".runtime").mkdir(exist_ok=True)
     commands = [
         ["uv", "run", "ruff", "check", "."],
         ["uv", "run", "ruff", "format", "--check", "."],
