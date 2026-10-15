@@ -38,7 +38,7 @@ The API bounds upload size, queue capacity, retained storage, job time and worke
 - [Owned-photo status](reports/owned-capture-status.md) and [capture recipe](docs/CAPTURE-GUIDE.md)
 - [Engineering case study](docs/CASE-STUDY.md) and [two-minute walkthrough](docs/WALKTHROUGH.md)
 - [Runbook: setup, optional features, batch, quotas, lease and recovery](docs/RUNBOOK.md)
-- [Exported OpenAPI](docs/api/openapi.json), [specification](docs/SPEC.md) and [verification state](docs/STATE.md)
+- [Exported OpenAPI](docs/api/openapi.json), [specification](docs/SPEC.md) and [verification state](docs/STATE.md) and [execution record](docs/EXECUTION-RECORD.md)
 
 ## Observed procedural comparison
 

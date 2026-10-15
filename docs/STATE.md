@@ -16,11 +16,11 @@ Working directory and Git root: `/Users/matthewgoralczyk/BentoLabs/portfolio/def
 | 7. Interface | Complete | Strict TypeScript, 8 UI tests and 5 actual-API browser tests; desktop/mobile, both palettes and keyboard flow. |
 | 8. Evaluation | Complete | Two actual frozen methods, 90 held-out images each; curated report, raw rows, provenance and reviewed gallery. |
 | 9. Capture gate | Complete as no-run gate | Validated capture schema/guide. No owned photographs supplied; no photo accuracy claim. |
-| 10. Release verification | Final exact-source clone pending | Full local verification passed after review fixes; final clone will be recorded below. |
+| 10. Release verification | Complete | All 14 local checks and four clean-clone install/verify commands passed at source d110de4. |
 
 ## Verification and reproduction
 
-`uv run python scripts/verify.py --fixture-only` passed all 14 commands: Ruff, formatting, strict Pyright including tests/scripts, 62 Python unit/integration tests (one real-model test deselected), strict TypeScript including tests/configuration, 8 Vitest tests, production build, fixture/model preparation, 5 actual-API Playwright tests and 1 actual restart/interrupted-worker test. The latter saves a correction, restarts, retrieves it, and verifies unfinished work becomes INTERRUPTED without duplicate reviews. Oversized/corrupt inputs, process ownership and occupied-port refusal are covered. Logs: `.runtime/final-verification.log` and `.runtime/verification.json`.
+`uv run python scripts/verify.py --fixture-only` passed all 14 commands: Ruff, formatting, strict Pyright including tests/scripts, 63 Python unit/integration tests (one real-model test deselected), strict TypeScript including tests/configuration, 8 Vitest tests, production build, fixture/model preparation, 5 actual-API Playwright tests and 1 actual restart/interrupted-worker test. The latter saves a correction, restarts, retrieves it, and verifies unfinished work becomes INTERRUPTED without duplicate reviews. Oversized/corrupt inputs, process ownership and occupied-port refusal are covered. Logs: `.runtime/final-verification.log` and `.runtime/verification.json`. Chromium 156.0.8078.4 (Playwright revision 1248) exercised the browser flow.
 
 `uv run pytest tests/integration/test_feature_prepare.py -m real_model -q` separately passed one actual pretrained test after final inference changes. It verifies shape, finite varied scores, full checkpoint hash and worker exit. Log: `.runtime/final-real-model.log`.
 
@@ -48,6 +48,16 @@ Procedural software evidence and actual pretrained execution are complete. Gener
 
 One fresh reviewer found eight Important issues, no Critical or Minor findings. All eight were accepted and verified RED-to-GREEN in one fix pass; the complete suite passed afterward. No second review occurred. See `REVIEW.md` and the durable execution record for findings, decisions and costs. A path-escape reproduction initially wrote a test PNG under /tmp; its exact checksum was verified and only that probe removed. The regression now remains under this project's temporary directory.
 
-The first clean clone exposed missing runtime-directory initialization (37 test setup errors); the explicit initialization fix passed a separate clone at 316770e. That check predates final review fixes, so a new exact-source clone is required.
+The first clean clone exposed missing runtime-directory initialization (37 test setup errors); the explicit initialization fix passed a separate clone at 316770e. That check predates final review fixes. The final exact-source clone now supersedes it.
 
 All implementation and commits are local. No public repository, push, deployment, model upload, paid compute or external send occurred. No central registry/vault/parent/sibling record was modified. Integration owner: please record the verified outcome and remaining capture gate in the existing portfolio/operations record using its exact ID and current version; no record identity is assumed here. Keep this branch as-is for later publication approval.
+
+CI targets Ubuntu with Node 24; remote CI and Node 24 execution were not run here. The local frontend checks used the documented Node 26.7.0 exception.
+
+## Final clean-clone evidence
+
+`uv run python scripts/clean_clone.py` exited 0 at source commit `d110de4c9dcfc29c2b6e6187cecece800edfbfb3`. Its independent checkout is `.runtime/clean-clone-44ca592f24`; frozen uv dependencies, npm dependencies, Chromium installation and full fixture verification each exited 0. The clone verified its own .venv/package source/node_modules and generated its own fixtures, with no dependency/data symlinks to the original. Proof: `.runtime/clean-clone-evidence.json`; full output: `.runtime/final-clean-clone.log`. This source includes all final review fixes and the port-test regression. Subsequent committed changes only record documentation/evidence.
+
+An immediate verification repeat after an earlier clone exposed the test listener's missing SO_REUSEADDR: no active owner was present, but recently closed TCP connections prevented its bind. A deterministic server-close regression failed first, then passed with the listener configured like the real server; active occupied-port refusal remains asserted. The final 63-test suite and new clone passed after this fix. Failure log: `.runtime/task-10-port-failure.log`; RED evidence: `.runtime/port-reuse-red.log`.
+
+All ten tasks are complete, including the explicit no-photo branch of Task 9. No implementation step waits for missing assets. A separate photographic study requires the capture recipe; screen-reader support requires a manual audit. Owned API/web/model processes are stopped at finish. Full task history, all decisions and review findings are preserved in [EXECUTION-RECORD.md](EXECUTION-RECORD.md) and [REVIEW.md](REVIEW.md).
