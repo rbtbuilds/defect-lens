@@ -49,3 +49,5 @@ When Matthew pastes CHAT-HANDOFF.md into the fork, read the required documents, 
 ## Implementation evidence
 
 Task1: child Git initialised on feat/defect-lens-v1 (baseline a9a731f). Python3.12 project dependencies installed and locked; Node26.7 local exception verified against Vite engine >=22.12,CI targets24. Config/health tests RED missing modules -> GREEN2/2. Ruff,strict Pyright including tests,web strict typecheck and production build pass. pytest temporary state is scoped to .runtime/pytest; no shared suite cleanup is requested. No weights or inference loaded.
+
+Task2: original procedural generator produces216 samples with36 good training images; repeated CLI generation matches. Decoder admission/corruption/EXIF/animation and manifest grouping/path/hash tests pass. Full suite10tests; strict Pyright and Ruff pass. No real photos or pretrained weights used.
