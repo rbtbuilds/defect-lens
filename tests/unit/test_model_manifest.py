@@ -52,3 +52,26 @@ def test_changed_configuration_preserves_previous_revision(
     new = prepare_model(tmp_path / "data/manifest.json", "difference", target)
     assert new.revision != old.revision
     assert (target / "revisions" / old.revision / "manifest.json").read_bytes() == previous
+
+
+def test_loader_rejects_inference_source_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from defect_lens import models
+
+    make_dataset(tmp_path / "data")
+    prepare_model(tmp_path / "data/manifest.json", "difference", tmp_path / "model")
+    monkeypatch.setattr(models, "inference_source_hash", lambda: "f" * 64, raising=False)
+    with pytest.raises(ModelIntegrityError, match="source"):
+        load_model(tmp_path / "model")
+
+
+def test_training_rejects_heldout_group_overlap_without_reading_images(tmp_path: Path) -> None:
+    manifest = make_dataset(tmp_path / "data")
+    next(s for s in manifest.samples if s.split == "test").specimen_id = manifest.samples[
+        0
+    ].specimen_id
+    path = tmp_path / "data/manifest.json"
+    path.write_text(manifest.model_dump_json())
+    with pytest.raises(ValueError, match="specimen overlap"):
+        prepare_model(path, "difference", tmp_path / "model")

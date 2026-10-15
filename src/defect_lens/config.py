@@ -6,6 +6,7 @@ from pathlib import Path
 class Settings:
     root: Path
     model_dir: Path | None = None
+    feature_lease_token: str | None = None
     max_image_bytes: int = 8 * 1024 * 1024
     max_body_bytes: int = 9 * 1024 * 1024
     max_pixels: int = 8_000_000

@@ -26,7 +26,7 @@ def contained(root: Path, relative: str) -> Path:
     return resolved
 
 
-def validate_manifest(manifest: DatasetManifest, root: Path) -> None:
+def validate_groups(manifest: DatasetManifest) -> None:
     ids: set[str] = set()
     groups: dict[str, str] = {}
     sessions: dict[str, str] = {}
@@ -41,6 +41,11 @@ def validate_manifest(manifest: DatasetManifest, root: Path) -> None:
             if key in seen and seen[key] != sample.split:
                 raise ManifestError(f"{label} overlap")
             seen[key] = sample.split
+
+
+def validate_manifest(manifest: DatasetManifest, root: Path) -> None:
+    validate_groups(manifest)
+    for sample in manifest.samples:
         for relative, expected in [
             (sample.image_path, sample.image_sha256),
             (sample.mask_path, sample.mask_sha256),

@@ -15,7 +15,7 @@ import psutil
 from defect_lens.config import Settings
 from defect_lens.contracts import Job, JobError, ReadyState
 from defect_lens.errors import DomainError
-from defect_lens.lease import LeaseBusy, LeaseHandle, MachineLease
+from defect_lens.lease import LeaseBusy, LeaseHandle, MachineLease, token_matches
 from defect_lens.models import ModelManifest, read_model_manifest, resolve_model
 from defect_lens.repository import Repository
 from defect_lens.worker import WorkerCommand, WorkerEvent, WorkerSettings, worker_main
@@ -72,9 +72,14 @@ class Supervisor:
                 reason="Loading selected model",
             )
             if self.manifest.method == "resnet18_patch":
-                self.lease = MachineLease(self.settings.lease_path).acquire(
-                    "feature inference worker lifetime"
-                )
+                if self.settings.feature_lease_token and token_matches(
+                    self.settings.lease_path, self.settings.feature_lease_token
+                ):
+                    self.lease = None
+                else:
+                    self.lease = MachineLease(self.settings.lease_path).acquire(
+                        "feature inference worker lifetime"
+                    )
             self._spawn()
             self.thread = threading.Thread(
                 target=self._loop, name="defect-lens-supervisor", daemon=True
@@ -100,7 +105,9 @@ class Supervisor:
             target=self.target,
             args=(
                 WorkerSettings(
-                    self.settings, self.model_path, self.lease.token if self.lease else None
+                    self.settings,
+                    self.model_path,
+                    self.lease.token if self.lease else self.settings.feature_lease_token,
                 ),
                 self.inbound,
                 self.outbound,

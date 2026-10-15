@@ -9,8 +9,10 @@ import numpy as np
 from PIL import Image
 
 from defect_lens.config import Settings
-from defect_lens.contracts import InputMetadata, JobError, Region, StoredResult
+from defect_lens.contracts import Decision, InputMetadata, JobError, Region, StoredResult
 from defect_lens.imaging import decode_image
+from defect_lens.inference.base import ScoreResult
+from defect_lens.inference.preprocess import PreparedFrame
 from defect_lens.models import ModelBundle, load_model
 from defect_lens.repository import Repository
 
@@ -65,6 +67,17 @@ def persist_result(
     bundle: ModelBundle, path: Path, metadata: InputMetadata, root: Path, job_id: str
 ) -> StoredResult:
     prepared, scored, decision = bundle.inspect(decode_image(path), metadata)
+    return persist_prepared(bundle, prepared, scored, decision, root, job_id)
+
+
+def persist_prepared(
+    bundle: ModelBundle,
+    prepared: PreparedFrame,
+    scored: ScoreResult,
+    decision: Decision,
+    root: Path,
+    job_id: str,
+) -> StoredResult:
     directory = root / "outputs" / job_id
     directory.mkdir(parents=True, exist_ok=False)
     stage = directory / "aligned.part"

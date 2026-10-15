@@ -1,0 +1,10 @@
+{
+  "generator_revision": "tabletop-v1",
+  "seed": 20261015,
+  "specimens_per_split": 6,
+  "sessions_per_split": 3,
+  "train_good_per_pair": 2,
+  "validation_test_views_per_pair": ["good", "good", "missing", "mark", "blur"],
+  "total_samples": 216,
+  "rights": "Original procedural renderings; MIT. No photographs."
+}

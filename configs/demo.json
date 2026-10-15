@@ -1,0 +1,9 @@
+{
+  "purpose": "Documented v1 defaults; implementation and frozen manifest are authoritative",
+  "api": "http://127.0.0.1:8111",
+  "web": "http://127.0.0.1:5111",
+  "method": "difference",
+  "data_mode": "procedural",
+  "seed": 20261015,
+  "limits": {"pending": 32, "image_bytes": 8388608, "body_bytes": 9437184, "job_seconds": 30, "worker_mib": 1536, "storage_bytes": 536870912, "jobs": 10000}
+}

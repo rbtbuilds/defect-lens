@@ -14,7 +14,7 @@ Git root and working directory verified as /Users/matthewgoralczyk/BentoLabs/por
 | 5. Durable workflow | Complete | 30 light tests pass; actual child inference, timeout/restart budget, memory monitor, atomic rollback and corrections. |
 | 6. API/batch | Complete | Actual five-image HTTP batch: 5 succeeded,0 failed. Upload/replay/review/queue tests and generated contract checks pass. |
 | 7. Interface | Complete | 7 Vitest tests, strict TypeScript/build and 5 actual API Playwright tests pass; desktop/mobile both palettes inspected. |
-| 8. Evaluation | Next | Frozen measured comparison pending. |
+| 8. Evaluation | In progress | Metrics/provenance/failure tests pass; refreshed full benchmark pending shared ML lease (Casework evaluation owns it). |
 | 9-10 | Pending | Capture gate and release checks remain. |
 
 ## Verification
@@ -33,7 +33,7 @@ Procedural software workflow: in progress. Actual pretrained execution: passed r
 
 ## Next action
 
-Task 8: frozen procedural evaluation and measured comparison.
+Task 8 measured run pending shared lease; continue Task 9 capture validation and Task 10 independent runbook work. No lease is stolen or polled in a loop.
 
 Task 7: `npm --prefix web run typecheck`, `test -- --run` (7 tests), `build` and `test:e2e` (5 tests) passed. Actual browser uploads good/missing/blur, adjusts overlay with keyboard, saves correction and retrieves after reload. Selected-job reselection bug reproduced RED then fixed GREEN. Browser checks 390px/1280px light/dark, keyboard correction/theme and reduced motion, no horizontal overflow and muted-text contrast >=4.5. Screenshots .runtime/screenshots reviewed for alignment/spacing/detail. Chromium installed by Playwright locally; screen-reader testing not performed.
 

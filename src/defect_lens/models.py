@@ -26,7 +26,7 @@ from defect_lens.inference.base import Scorer, ScoreResult
 from defect_lens.inference.calibration import Calibration, LabelledScore, calibrate, decide
 from defect_lens.inference.difference import DifferenceScorer, fit_difference
 from defect_lens.inference.preprocess import PreparedFrame, prepare_frame
-from defect_lens.manifests import contained, file_hash, validate_manifest
+from defect_lens.manifests import contained, file_hash, validate_groups, validate_manifest
 
 
 class ModelIntegrityError(ValueError):
@@ -101,9 +101,31 @@ def read_model_manifest(directory: Path) -> ModelManifest:
     )
 
 
+def inference_source_hash() -> str:
+    root = Path(__file__).parent
+    paths = [
+        *sorted((root / "inference").glob("*.py")),
+        *[
+            root / name
+            for name in ["models.py", "imaging.py", "manifests.py", "config.py", "worker.py"]
+        ],
+    ]
+    return hashlib.sha256(
+        canonical({str(path.relative_to(root)): file_hash(path) for path in paths})
+    ).hexdigest()
+
+
 def load_model(directory: Path, lease_token: str | None = None) -> ModelBundle:
     root = resolve_model(directory)
     manifest = ModelManifest.model_validate_json((root / "manifest.json").read_bytes())
+    if manifest.source_hash != inference_source_hash():
+        raise ModelIntegrityError(
+            "Inference source differs from frozen model; prepare a new revision"
+        )
+    repository_root = Path(__file__).parents[2]
+    for name, expected in manifest.lock_hashes.items():
+        if file_hash(contained(repository_root, name)) != expected:
+            raise ModelIntegrityError("Dependency lock differs from frozen model")
     identity = manifest.model_dump(exclude={"revision"})
     if hashlib.sha256(canonical(identity)).hexdigest() != manifest.revision:
         raise ModelIntegrityError("model manifest identity mismatch")
@@ -166,6 +188,7 @@ def prepare_model(
         if _lease_token is None or not token_matches(DEFAULT_LEASE, _lease_token):
             raise LeaseBusy("Feature preparation requires owned lease")
     all_data = DatasetManifest.model_validate_json(dataset.read_bytes())
+    validate_groups(all_data)
     selected = all_data.model_copy(
         update={"samples": [s for s in all_data.samples if s.split != "test"]}
     )
@@ -233,14 +256,7 @@ def prepare_model(
         np.save(stage / "bank.npy", scorer.bank, allow_pickle=False)
         shutil.copyfile(weights, stage / "weights.pth")
     source_root = Path(__file__).parent
-    source_paths = [
-        *sorted((source_root / "inference").glob("*.py")),
-        source_root / "models.py",
-        source_root / "imaging.py",
-    ]
-    source_hash = hashlib.sha256(
-        canonical({p.name: file_hash(p) for p in source_paths})
-    ).hexdigest()
+    source_hash = inference_source_hash()
     repository_root = source_root.parents[1]
     locks = {
         name: file_hash(repository_root / name)
