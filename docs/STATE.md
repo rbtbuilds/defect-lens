@@ -15,7 +15,8 @@ Git root and working directory verified as /Users/matthewgoralczyk/BentoLabs/por
 | 6. API/batch | Complete | Actual five-image HTTP batch: 5 succeeded,0 failed. Upload/replay/review/queue tests and generated contract checks pass. |
 | 7. Interface | Complete | 7 Vitest tests, strict TypeScript/build and 5 actual API Playwright tests pass; desktop/mobile both palettes inspected. |
 | 8. Evaluation | In progress | Metrics/provenance/failure tests pass; refreshed full benchmark pending shared ML lease (Casework evaluation owns it). |
-| 9-10 | Pending | Capture gate and release checks remain. |
+| 9. Capture gate | Complete | Validator tests and guide complete; no owned photographs supplied, no photo metrics. |
+| 10. Release verification | Next | Clean clone, process scripts and final review remain. |
 
 ## Verification
 
@@ -33,7 +34,7 @@ Procedural software workflow: in progress. Actual pretrained execution: passed r
 
 ## Next action
 
-Task 8 measured run pending shared lease; continue Task 9 capture validation and Task 10 independent runbook work. No lease is stolen or polled in a loop.
+Task 8 measured run pending shared lease; continue Task 10 independent runbook work. No lease is stolen or polled in a loop.
 
 Task 7: `npm --prefix web run typecheck`, `test -- --run` (7 tests), `build` and `test:e2e` (5 tests) passed. Actual browser uploads good/missing/blur, adjusts overlay with keyboard, saves correction and retrieves after reload. Selected-job reselection bug reproduced RED then fixed GREEN. Browser checks 390px/1280px light/dark, keyboard correction/theme and reduced motion, no horizontal overflow and muted-text contrast >=4.5. Screenshots .runtime/screenshots reviewed for alignment/spacing/detail. Chromium installed by Playwright locally; screen-reader testing not performed.
 
@@ -42,3 +43,5 @@ Task 6: focused HTTP tests passed (upload/replay/stale revision/origin, chunked 
 Task 5: `uv run --extra features pytest -m "not real_model" -q` ->30 passed,1 deselected; strict Pyright and Ruff pass. Spawned real difference worker completes exactly one inspection; timeout kills/join, one restart then degraded; 1 MiB test ceiling exercises RSS recovery. Competing admission respects one-slot capacity; a simulated post-artifact/pre-commit crash rolls back and startup marks INTERRUPTED. Correction replay/version conflict and reopen persistence pass. Server lock refuses a second owner. No feature worker remains resident.
 
 Task 4 exact checks: `uv run --extra features pytest -m "not real_model" -q` (23 passed), `uv run --extra features pytest tests/integration/test_feature_prepare.py -m real_model -q` (1 passed), strict Pyright and Ruff passed. Feature prepare succeeded under the shared lease; the child exited before token-checked release. Weight origin/checksum is in MODEL-CARD and model manifest. No owned photographs were used. Narrow local torchvision signature stubs cover its untyped public entry points; no missing-import exclusion.
+
+Task 9: capture validator RED missing module -> GREEN2tests, strict Pyright/Ruff pass. Covers rights/hash/group/session/fixture-source/staged-mark/ambiguous labels. No .runtime/data/captures directory exists. Preparation/evaluation preserve declared aligned-mask coordinates to avoid double warping.

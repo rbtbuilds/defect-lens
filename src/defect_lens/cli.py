@@ -14,8 +14,10 @@ from defect_lens.models import prepare_model
 def _main() -> None:
     parser = argparse.ArgumentParser(description="Local visual inspection")
     parser.add_argument(
-        "command", choices=["serve", "fixtures", "prepare", "batch", "benchmark", "export-report"]
+        "command",
+        choices=["serve", "fixtures", "prepare", "batch", "benchmark", "export-report", "captures"],
     )
+    parser.add_argument("capture_action", nargs="?", choices=["validate"])
     parser.add_argument("--model", type=Path)
     parser.add_argument("--difference-model", type=Path)
     parser.add_argument("--patch-model", type=Path)
@@ -46,6 +48,17 @@ def _main() -> None:
         summary = run_batch(args.manifest, args.api, args.output)
         print(summary)
         raise SystemExit(summary.exit_code)
+    if args.command == "captures":
+        from defect_lens.captures import validate_captures
+        from defect_lens.contracts import DatasetManifest
+
+        if args.manifest is None or args.capture_action != "validate":
+            parser.error("captures validate requires --manifest")
+        result = validate_captures(
+            DatasetManifest.model_validate_json(args.manifest.read_bytes()), args.manifest.parent
+        )
+        print(result.model_dump_json(indent=2))
+        raise SystemExit(0 if result.valid else 2)
     if args.command == "benchmark":
         from defect_lens.evaluation import evaluate
         from defect_lens.manifests import load_manifest

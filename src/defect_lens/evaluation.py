@@ -273,7 +273,10 @@ def evaluate_one(
             if sample.mask_path and not result.reasons:
                 with Image.open(contained(root, sample.mask_path)) as image:
                     mask = np.asarray(image, dtype=np.uint8)
-                if prepared.transform is not None:
+                if prepared.transform is not None and not (
+                    sample.capture_review
+                    and sample.capture_review.mask_coordinate_frame == "aligned"
+                ):
                     mask = np.asarray(
                         cv2.warpAffine(
                             mask,

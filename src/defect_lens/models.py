@@ -107,7 +107,15 @@ def inference_source_hash() -> str:
         *sorted((root / "inference").glob("*.py")),
         *[
             root / name
-            for name in ["models.py", "imaging.py", "manifests.py", "config.py", "worker.py"]
+            for name in [
+                "models.py",
+                "imaging.py",
+                "manifests.py",
+                "config.py",
+                "worker.py",
+                "contracts.py",
+                "captures.py",
+            ]
         ],
     ]
     return hashlib.sha256(
@@ -189,6 +197,12 @@ def prepare_model(
             raise LeaseBusy("Feature preparation requires owned lease")
     all_data = DatasetManifest.model_validate_json(dataset.read_bytes())
     validate_groups(all_data)
+    if all_data.mode == "owned_capture":
+        from defect_lens.captures import validate_captures
+
+        validation = validate_captures(all_data, dataset.parent)
+        if not validation.valid:
+            raise ValueError("Owned capture manifest failed rights/annotation validation")
     selected = all_data.model_copy(
         update={"samples": [s for s in all_data.samples if s.split != "test"]}
     )
@@ -228,7 +242,9 @@ def prepare_model(
 
             with Image.open(contained(dataset.parent, sample.mask_path)) as image:
                 mask = np.asarray(image, dtype=np.uint8)
-            if frame.transform is not None:
+            if frame.transform is not None and not (
+                sample.capture_review and sample.capture_review.mask_coordinate_frame == "aligned"
+            ):
                 mask = np.asarray(
                     cv2.warpAffine(
                         mask,
