@@ -1,5 +1,26 @@
 # Verification state
 
+## Photographic development and recording pass (2026-10-17)
+
+In progress on `feat/photographic-development-demo`, based on `40e5d51`.
+The [frozen protocol](PHOTO-PROTOCOL.md) permits only development diagnostics on
+36 public VisA candle photographs (12 fit, 24 development). CC BY 4.0 was
+verified against the official pinned `LICENSE-DATASET`, independently of MIT.
+The dataset does not expose physical specimen/session IDs, so a confirmatory
+specimen-separated final evaluation remains blocked. Images are not owned
+captures; source paths and distinct hashes do not prove physical independence.
+
+The full-frame adapter is separate from the plate API. Original frozen reports
+and inference implementations remain unchanged. Focused RED-to-GREEN tests cover
+source/hashes, overlap, unsafe archive paths, failed input retention and border
+defects. Strict Pyright passed after making a test's array dtype explicit.
+
+Initial recording failed because its script supplied 0.8 to the integer 0-100
+opacity control; corrected to 80. A light Python suite was mistakenly started
+while this checkout's demo occupied port 8111; occupied-port tests failed. These
+are orchestration failures, not passed checks. Rerun the complete verification
+after stopping the recorded demo. Evidence logs stay under `.runtime/`.
+
 Defect Lens v1 implements all ten tasks in the [original execution record](EXECUTION-RECORD.md). A subsequent independent publication review found two Important defects; both are fixed with regressions. Its Minor decoder-contract discrepancy is documented and tested. See [PUBLICATION-REVIEW.md](PUBLICATION-REVIEW.md).
 
 ## Current checks

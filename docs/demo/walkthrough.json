@@ -1,0 +1,101 @@
+{
+  "model": {
+    "status": "ready",
+    "model_revision": "c25f014f92c51762c4920972e91c21db1715444e2a969a78870f272a1ef40dee",
+    "method": "difference",
+    "data_mode": "procedural",
+    "low": 0.00407522520981729,
+    "high": 0.12389541300944984,
+    "heatmap_display_max": 0.033578433096408844
+  },
+  "input_mode": "procedural",
+  "inference": "actual difference API",
+  "correction": "automated script, not human review",
+  "inputs": [
+    {
+      "image_path": "test-00-0-0.png",
+      "image_sha256": "5dd711ff1203a787d9ab0a95c10ea1f6689d7df6912b7e4a58bac299552805fc"
+    },
+    {
+      "image_path": "test-00-0-2.png",
+      "image_sha256": "4b279a57825421869bdffdf0a776006ac8a8769af5cad84ab950b1c4b721fb34"
+    },
+    {
+      "image_path": "test-00-0-4.png",
+      "image_sha256": "7e81b121f1f5d17be4560054243928def9242fa418db60925a5771cfbceafaf1"
+    }
+  ],
+  "timeline": [
+    {
+      "seconds": 0.118,
+      "title": "An inspection you can trace",
+      "detail": "Compare appearance, inspect the evidence, keep the original decision."
+    },
+    {
+      "seconds": 4.498,
+      "title": "Start with a good reference view",
+      "detail": "This result comes from the running local API and its difference model."
+    },
+    {
+      "seconds": 8.858,
+      "title": "A missing fastener changes the image",
+      "detail": "The overlay locates unusual appearance; it does not diagnose a damage cause."
+    },
+    {
+      "seconds": 11.862,
+      "title": "Compare the original and the overlay",
+      "detail": "The slider exposes the input beneath the anomaly map."
+    },
+    {
+      "seconds": 13.867,
+      "title": "Inspect spatial evidence",
+      "detail": "The numeric score and model revision stay with the saved result."
+    },
+    {
+      "seconds": 18.221,
+      "title": "Uncertainty is visible",
+      "detail": "Blur forces review and suppresses localization instead of implying a precise defect."
+    },
+    {
+      "seconds": 22.239,
+      "title": "Keep feedback separate from model output",
+      "detail": "This scripted correction demonstrates persistence. It is not a human annotation."
+    },
+    {
+      "seconds": 25.346,
+      "title": "An append-only correction history",
+      "detail": "The saved version leaves the original inference unchanged."
+    },
+    {
+      "seconds": 28.449,
+      "title": "Saved after reload",
+      "detail": "Model output and correction remain linked. No automatic retraining takes place."
+    },
+    {
+      "seconds": 31.458,
+      "title": "Know what the evidence supports",
+      "detail": "Procedural demo. Separate public-photo development study. No industrial validation."
+    }
+  ],
+  "video": "walkthrough.mp4",
+  "sha256": "5835e5e593d39a39c7d6532a5a4426617e90c03aed6e43c9d0f7d0fd0f93ad76",
+  "original_webm_sha256": "9d7f53076196d628e04c44928fc33731001a9d1e2a253c44586311b955577b63",
+  "recorder_sha256": "241e60b8ef7821dd71d752b6216296595a29d4b0864708ee0f9235616c07113e",
+  "packager_sha256": "673fff7753bd790f7e027b0571de57f3f11cbf91d656f68cf6f65911cd7b6439",
+  "ffprobe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 1400
+      }
+    ],
+    "format": {
+      "duration": "38.320000",
+      "size": "996692"
+    }
+  },
+  "annotation_note": "Caption bar injected by the recorder; app interactions and inference are real. No audio. Timeline uses approximate recording wall time."
+}

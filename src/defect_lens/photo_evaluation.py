@@ -2,9 +2,9 @@
 
 import hashlib
 import json
-import platform
 import time
 from collections.abc import Callable, Sequence
+from importlib.metadata import version
 from pathlib import Path
 
 import cv2
@@ -16,12 +16,14 @@ from defect_lens.contracts import Contract, Decision
 from defect_lens.evaluation import (
     Metrics,
     PredictionRow,
+    environment,
     pixel_average_precision,
     summarize_predictions,
 )
 from defect_lens.imaging import RgbFrame
 from defect_lens.inference.calibration import Calibration, LabelledScore, calibrate, decide
 from defect_lens.inference.patch import ResNetEncoder, chunked_nearest, reservoir_bank
+from defect_lens.lease import DEFAULT_LEASE, LeaseBusy, token_matches
 from defect_lens.manifests import contained, file_hash
 from defect_lens.photographs import PhotoManifest, PhotoSample, validate_photos
 
@@ -164,7 +166,11 @@ def diagnose(scorer: Scorer, samples: Sequence[PhotoSample], root: Path) -> Phot
     )
 
 
-def compare(root: Path, output: Path, weights: Path, protocol: Path) -> None:
+def compare(
+    root: Path, output: Path, weights: Path, protocol: Path, *, lease_token: str | None = None
+) -> None:
+    if lease_token is None or not token_matches(DEFAULT_LEASE, lease_token):
+        raise LeaseBusy("Photographic comparison requires the matching owned machine lease")
     manifest_path = root / "manifest.json"
     manifest = PhotoManifest.model_validate_json(manifest_path.read_bytes())
     validate_photos(manifest, root)
@@ -215,10 +221,9 @@ def compare(root: Path, output: Path, weights: Path, protocol: Path) -> None:
             name: file_hash(Path(name)) for name in ["uv.lock", "web/package-lock.json"]
         },
         "environment": {
-            "platform": platform.platform(),
-            "python": platform.python_version(),
-            "numpy": np.__version__,
-            "opencv": cv2.__version__,
+            **environment(),
+            "torch": version("torch"),
+            "torchvision": version("torchvision"),
         },
         "timing_scope": "CPU, torch2/OpenCV1; warm decode/resize/scoring only; cold excludes fit image decode; no API/disk report/mask metric time",
         "intervals": None,

@@ -24,6 +24,28 @@ Each model revision includes source, dependency, configuration, artifact and tra
 
 Generated groups are not independently photographed assemblies. Their bootstrap intervals describe this generated set; they do not establish variation across real objects. No owned-photo study has run. The [capture guide](CAPTURE-GUIDE.md) defines a separate study with distinct physical assemblies, exclusive sessions, explicit rights and reviewed truth masks.
 
+## Adding photographic evidence without changing the claim
+
+The next evidence step uses a small, predefined VisA candle subset with the
+authors' image labels and masks. Its CC BY 4.0 data terms permit attributed
+reuse and are preserved separately from the MIT application code. Source
+photographs and weights remain local.
+
+Candles are a different inspection problem: multiple objects, varying placement
+and no plate jig. A standalone adapter therefore scores the entire resized
+photograph. Reusing the plate registration or border crop would discard relevant
+pixels and make its quality gates inappropriate. Both the median-reference
+baseline and actual ResNet18 features use that same full-frame geometry.
+
+The important restriction is statistical. Published source paths identify
+images, not independently confirmed physical specimens or acquisition sessions.
+The [photo protocol](PHOTO-PROTOCOL.md) freezes selection and methods before
+fitting, and refuses final evaluation without those groups. Development
+diagnostics calibrate and measure on the same development images, so their
+numbers are resubstitution results. They can reveal failure behavior; they do
+not estimate performance on unseen physical objects. No person reviewed the
+outputs or supplied new annotations for this pass.
+
 ## Uncertain inputs
 
 A blurred image can have a large appearance difference even when no fastener is missing. The quality gate sends it to review and suppresses the score/heatmap, rather than inviting an operator to interpret blur as localized damage. Those images appear in the report's gallery.

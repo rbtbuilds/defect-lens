@@ -1,6 +1,7 @@
 """Run development diagnostics in a model child protected by the shared lease."""
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -21,9 +22,26 @@ def main() -> None:
     if args.lease_token:
         if not token_matches(DEFAULT_LEASE, args.lease_token):
             parser.error("Missing matching machine lease")
-        compare(args.dataset, args.output, args.weights, Path("docs/PHOTO-PROTOCOL.md"))
+        compare(
+            args.dataset,
+            args.output,
+            args.weights,
+            Path("docs/PHOTO-PROTOCOL.md"),
+            lease_token=args.lease_token,
+        )
     else:
         with MachineLease().acquire("VisA candle full development comparison") as lease:
+            os.environ.update(
+                {
+                    name: "1"
+                    for name in [
+                        "OPENBLAS_NUM_THREADS",
+                        "OMP_NUM_THREADS",
+                        "MKL_NUM_THREADS",
+                        "VECLIB_MAXIMUM_THREADS",
+                    ]
+                }
+            )
             run_model_process(
                 [
                     sys.executable,

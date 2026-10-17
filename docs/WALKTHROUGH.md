@@ -1,4 +1,50 @@
-# Two-minute local walkthrough
+# Browser walkthrough
+
+[Watch the captioned recording](demo/walkthrough.mp4). It shows actual local
+difference inference on three generated fixtures: a good view, a missing
+fastener and blur. The correction is submitted by automation, not a person.
+The caption bar is a recording annotation; no inference responses are mocked.
+There is no audio. Input/model hashes, captions and encoder metadata are in
+[walkthrough.json](demo/walkthrough.json).
+
+## Record it again
+
+After the README setup, with ports 8111/5111 free and FFmpeg/FFprobe installed:
+
+```bash
+uv run python scripts/dev.py start --model .runtime/models/demo-difference
+node web/demo/record.mts
+node web/demo/package.mts
+uv run python scripts/dev.py stop
+```
+
+The recorder asserts each new job succeeds, overlays are available on the
+clear examples, blur suppresses localization, and the scripted correction
+survives reload. It writes a WebM and `.runtime/demo/latest.json`; the packager
+creates `.runtime/demo/walkthrough.mp4` and a portable provenance JSON. Existing
+videos are never overwritten. Pass a new output filename as the packager's
+second argument to make another recording:
+
+```bash
+node web/demo/package.mts .runtime/demo/latest.json .runtime/demo/another-take.mp4
+```
+
+The published clip is a single continuous browser recording, transcoded to H.264
+with a web-friendly pixel format and fast start. Caption times use wall time;
+allow a small video startup offset. The viewport is deliberately tall so the
+evidence and correction panels remain visible. Stop owned servers even if a
+recording assertion fails. Recordings create real local jobs and review entries.
+
+## Transcript
+
+- Start with a good reference view and its actual saved inference.
+- Inspect the missing-fastener overlay and adjust opacity.
+- Show blurred input forcing review, with score/localization suppressed.
+- Save an explicitly scripted correction; open history and reload.
+- Close with the evidence boundary: procedural workflow, separate public-photo
+  development diagnostics, no industrial validation.
+
+## Longer live walkthrough
 
 0:00-0:20: Show the README scope and the persistent Procedural demonstration, method, readiness and revision labels. Explain the controlled overhead gray plate with four dark fasteners. This is a reproducible local simulation, not a customer pilot.
 

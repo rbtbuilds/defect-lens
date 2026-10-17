@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Separate public-photo development adapter with source/licence/hash provenance
+  and an explicit physical-specimen gate for final evaluation.
+- Automated captioned browser recording of actual inference, uncertainty,
+  overlays and persisted scripted correction, with reproducible recording tools.
+
 - Original deterministic tabletop fixtures and bounded PNG/JPEG decoding.
 - Aligned difference and actual ResNet18 layer2 patch baselines with immutable revisions and validation-only calibration.
 - Durable bounded jobs, append-only corrections, worker recovery and explicit failures.

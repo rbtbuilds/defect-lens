@@ -8,6 +8,11 @@ Built with **Python, FastAPI, SQLite, OpenCV, PyTorch and React/TypeScript**. Ru
 
 ![Defect Lens localizing a missing fastener with an anomaly overlay and a saved operator review](docs/images/workbench.png)
 
+[Watch the captioned browser walkthrough](docs/demo/walkthrough.mp4): actual local
+inference, an adjustable overlay, blur uncertainty and a correction that survives
+reload. Inputs are procedural; the correction is scripted. See the
+[transcript and recording commands](docs/WALKTHROUGH.md).
+
 ## What it does
 
 The sample object is a gray plate with four dark fasteners. Defect Lens checks for a missing fastener or an unexpected surface mark. A blurred or badly framed image goes to review instead of receiving a confident pass or fail.
@@ -97,4 +102,7 @@ The [verification record](docs/STATE.md) lists exact outcomes and the [review re
 
 This is a single-operator local application for a controlled overhead view. Camera integration, authenticated teams, cloud hosting, automatic retraining and per-job cancellation are outside v1. See [security and limits](SECURITY.md).
 
-Original code, documentation and procedural images are [MIT licensed](LICENSE). Third-party weights and training data retain their own terms; no weights or external image datasets are redistributed. Contributions are covered in [CONTRIBUTING.md](CONTRIBUTING.md).
+Original code, documentation and procedural images are [MIT licensed](LICENSE).
+Third-party weights and datasets retain their own terms. No source photographs
+or weights are redistributed; photographic study metadata and its dataset licence
+are preserved separately. Contributions are covered in [CONTRIBUTING.md](CONTRIBUTING.md).

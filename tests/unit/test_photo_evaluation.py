@@ -1,10 +1,17 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 from PIL import Image
 
-from defect_lens.photo_evaluation import diagnose, difference_heatmap, full_image_score
+from defect_lens.lease import LeaseBusy
+from defect_lens.photo_evaluation import compare, diagnose, difference_heatmap, full_image_score
 from defect_lens.photographs import PhotoSample
+
+
+def test_direct_comparison_requires_owned_lease_before_reading_inputs(tmp_path: Path) -> None:
+    with pytest.raises(LeaseBusy):
+        compare(tmp_path, tmp_path / "output", tmp_path / "weights", tmp_path / "protocol")
 
 
 def test_full_frame_adapter_keeps_border_defects() -> None:
@@ -50,7 +57,5 @@ def test_fit_rows_cannot_enter_reported_development_metrics(tmp_path: Path) -> N
         partition="fit",
         label="good",
     )
-    import pytest
-
     with pytest.raises(ValueError, match="development"):
         diagnose(lambda _frame: np.zeros((256, 256), dtype=np.float32), [record], tmp_path)

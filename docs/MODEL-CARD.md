@@ -9,3 +9,12 @@ Current evidence: difference pipeline tests executed on original procedural imag
 The frozen decision cost is five missed defects to one false reject. Blur, clipping, framing and ECC alignment are demonstration heuristics and always force review. Human corrections preserve the original result and never become training labels automatically. Uncontrolled lighting, viewpoint, background, material or object changes invalidate this narrow demonstration.
 
 Owned-photo gate: [capture recipe](CAPTURE-GUIDE.md) and [explicit no-run status](../reports/owned-capture-status.md). The validator checks declared rights, exclusive groups, human annotations, timestamps and mask coordinate provenance; it cannot establish photographic authenticity or consent. Its synthetic tests are software evidence only.
+
+The standalone [public-photo development adapter](PHOTO-PROTOCOL.md) is a
+different domain: multiple VisA candles, full-image square resizing and no plate
+quality/registration gates. It never changes or loads a product model revision.
+It uses public author-provided labels, not owned captures or new human review.
+Development thresholds and metrics use the same development examples; these
+are explicitly resubstitution diagnostics, with no final accuracy claim. Physical
+specimen and session IDs are unknown, so final evaluation is blocked. Dataset
+rights are documented separately in [THIRD-PARTY.md](../THIRD-PARTY.md).
