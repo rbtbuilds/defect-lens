@@ -14,6 +14,15 @@ Start with [README.md](README.md), [docs/STATE.md](docs/STATE.md) and [docs/REVI
 
 ## Remaining evidence boundaries
 
+A separate [public-photo development study](reports/visa-candle-dev-v1/report.md)
+uses VisA candle photographs under CC BY 4.0. Read [PHOTO-PROTOCOL](docs/PHOTO-PROTOCOL.md)
+before changing its fixed selection or adapter. It is development resubstitution
+with unknown physical specimen/session identities; final evaluation is blocked.
+Public photographs never satisfy the owned-capture gate. Source images/weights
+stay local, and the original procedural reports remain frozen. The
+[captioned recording](docs/demo/walkthrough.mp4) shows actual difference inference
+on procedural inputs and an explicitly automated correction.
+
 The measured comparison uses original procedural images. Actual ResNet18 inference has run, but no owned-photo study or screen-reader audit has been performed. A photographic study must follow [docs/CAPTURE-GUIDE.md](docs/CAPTURE-GUIDE.md), preserve separate model revisions and produce a new frozen report. Do not describe the generated results as industrial validation.
 
 The application remains local and single-operator. Camera integration, authentication, cloud hosting, automatic retraining and per-job cancellation require their own scoped design work.

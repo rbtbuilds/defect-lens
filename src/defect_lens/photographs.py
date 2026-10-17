@@ -3,6 +3,7 @@
 import csv
 import hashlib
 import io
+import json
 import tarfile
 from collections.abc import Callable
 from pathlib import Path, PurePosixPath
@@ -16,6 +17,10 @@ UPSTREAM = "2a692ab575001cbde74d402d897a7286086c6199"
 ARCHIVE = "https://amazon-visual-anomaly.s3.us-west-2.amazonaws.com/VisA_20220922.tar"
 ARCHIVE_SIZE = 1929840640
 ARCHIVE_ETAG = '"05c830591a1172938cb714895c9e0cfb-113"'
+CSV_SHA256 = "a48557e6033318cb90556f706196bc9d247a776a23ea51aecee5a80dd0332995"
+LICENSE_SHA256 = "9e5f1b3c610b9c2da5c313bf81d577a7d1acec686bdb0384edefa6df0f90cd94"
+# This adapter implements one frozen subset; changed inputs need a new protocol revision.
+SELECTION_SHA256 = "f17594529872d92bdec929cdd4179462d94d1c40ea222dc5e61d705204697c17"
 
 
 class PhotoSample(Contract):
@@ -94,6 +99,12 @@ def read_range(start: int, size: int) -> bytes:
     return data
 
 
+def validate_photo_source(manifest: PhotoManifest) -> None:
+    identity = json.dumps(manifest.model_dump(), sort_keys=True, separators=(",", ":")).encode()
+    if hashlib.sha256(identity).hexdigest() != SELECTION_SHA256:
+        raise ValueError("Frozen source/selection hash mismatch; create a new protocol revision")
+
+
 def validate_photos(manifest: PhotoManifest, root: Path, *, final: bool = False) -> None:
     if final:
         raise ValueError("Final evaluation blocked: physical specimen/session identities unknown")
@@ -101,6 +112,7 @@ def validate_photos(manifest: PhotoManifest, root: Path, *, final: bool = False)
     hashes = [s.image_sha256 for s in manifest.samples]
     if len(set(paths)) != len(paths) or len(set(hashes)) != len(hashes):
         raise ValueError("Photo overlap or duplicate image hashes")
+    validate_photo_source(manifest)
     for sample in manifest.samples:
         if sample.partition == "fit" and sample.label != "good":
             raise ValueError("Only normal photographs may fit the reference")
@@ -130,6 +142,11 @@ def acquire(output: Path, evidence: Path, protocol: Path) -> PhotoManifest:
 
     metadata = upstream("split_csv/1cls.csv")
     license_text = upstream("LICENSE-DATASET")
+    if (
+        hashlib.sha256(metadata).hexdigest() != CSV_SHA256
+        or hashlib.sha256(license_text).hexdigest() != LICENSE_SHA256
+    ):
+        raise ValueError("Pinned source metadata/licence hash mismatch")
     rows = sorted(
         [r for r in csv.DictReader(io.StringIO(metadata.decode())) if r["object"] == "candle"],
         key=lambda r: r["image"],

@@ -46,6 +46,14 @@ numbers are resubstitution results. They can reveal failure behavior; they do
 not estimate performance on unseen physical objects. No person reviewed the
 outputs or supplied new annotations for this pass.
 
+The [measured diagnostic](../reports/visa-candle-dev-v1/report.md) illustrates why
+that restraint matters. Difference had no binary errors after development
+threshold selection, yet mean defect-mask overlap was only 0.010. Pretrained
+patches reached 0.176 overlap and falsely rejected one of 12 good images. Neither
+is a strong localization result. Looking only at image-level accuracy would hide
+the weakness. Both preserve every prediction and error count; the report includes
+runtime scope, source/weight hashes and the known independence limitation.
+
 ## Uncertain inputs
 
 A blurred image can have a large appearance difference even when no fastener is missing. The quality gate sends it to review and suppresses the score/heatmap, rather than inviting an operator to interpret blur as localized damage. Those images appear in the report's gallery.

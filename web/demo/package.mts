@@ -19,14 +19,17 @@ if (
 ) {
   throw new Error("Demo files must remain in this checkout");
 }
-try {
-  await access(output);
-  throw new Error(
-    "Refusing to overwrite an existing demo; choose a new output path",
-  );
-} catch (error) {
-  if (!(error instanceof Error && "code" in error && error.code === "ENOENT"))
-    throw error;
+const sidecar = output.replace(/\.mp4$/, "") + ".json";
+for (const candidate of [output, sidecar]) {
+  try {
+    await access(candidate);
+    throw new Error(
+      "Refusing to overwrite a demo or its provenance; choose a new output path",
+    );
+  } catch (error) {
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT"))
+      throw error;
+  }
 }
 const recording = JSON.parse(await readFile(source, "utf8")) as {
   model: ModelMetadata;

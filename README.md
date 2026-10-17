@@ -37,7 +37,22 @@ The comparison used 90 held-out **procedural images** per method: 36 good, 36 wi
 
 Measured on an Apple M5 Pro with 24 GiB RAM, using CPU inference. Pipeline latency includes decoding, alignment, scoring and artifact storage. The [full report](reports/fixture-v1/report.md) includes raw predictions, split and model hashes, memory measurements and timing scope.
 
-These images are deliberately simple. Actual pretrained inference has run, but **no photographic accuracy study has been performed**. The results support the reproducible demo; they do not establish industrial inspection performance.
+These images are deliberately simple. The results support the reproducible demo;
+they do not establish industrial inspection performance.
+
+### Public-photograph development study
+
+A separate adapter compares both methods on a small **VisA candle** subset,
+using public photographs and author-provided defect masks under CC BY 4.0.
+On 24 development images, mean defect-mask overlap was **0.010 for difference
+versus 0.176 for pretrained patches**. The image-level result would obscure that
+localization weakness; the patch method also falsely rejected one good image.
+
+These are **development resubstitution diagnostics**: the same images set the
+thresholds and supply the metrics. Physical specimen/session IDs are unavailable,
+so specimen-separated final evaluation is blocked. This different-domain study
+does not validate the plate app, and no owned-photo pilot or industrial accuracy
+is claimed. Read the [photo report and reproduction commands](reports/visa-candle-dev-v1/report.md).
 
 ## Run locally
 

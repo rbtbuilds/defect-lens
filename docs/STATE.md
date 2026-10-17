@@ -2,28 +2,97 @@
 
 ## Photographic development and recording pass (2026-10-17)
 
-In progress on `feat/photographic-development-demo`, based on `40e5d51`.
-The [frozen protocol](PHOTO-PROTOCOL.md) permits only development diagnostics on
-36 public VisA candle photographs (12 fit, 24 development). CC BY 4.0 was
-verified against the official pinned `LICENSE-DATASET`, independently of MIT.
-The dataset does not expose physical specimen/session IDs, so a confirmatory
-specimen-separated final evaluation remains blocked. Images are not owned
-captures; source paths and distinct hashes do not prove physical independence.
+Completed implementation and measurement on `feat/photographic-development-demo`,
+based on `40e5d51`. The [frozen protocol](PHOTO-PROTOCOL.md) permits development
+resubstitution only: 12 fit normals, 12 development normals and 12 development
+defects from public VisA candle photographs. Official CC BY 4.0 terms, source CSV,
+36 image and 12 mask hashes are preserved separately from MIT. Selected payloads:
+4,226,496 bytes. No source photographs or weights are committed.
 
-The full-frame adapter is separate from the plate API. Original frozen reports
-and inference implementations remain unchanged. Focused RED-to-GREEN tests cover
-source/hashes, overlap, unsafe archive paths, failed input retention and border
-defects. Strict Pyright passed after making a test's array dtype explicit.
+The [report](../reports/visa-candle-dev-v1/report.md) contains actual difference and
+pretrained CPU inference, all 48 development predictions, errors, masks, thresholds,
+review burden and runtime scope. Both have zero binary misses on the development
+threshold-selection set. Difference review is 7/24, mean defect IoU 0.010465;
+patch review is 6/24, IoU 0.176416, with one good-image false reject. Warm p95 is
+6.50 and 21.82 ms. These are neither held-out accuracy nor validation of the plate
+app. Source photo/mask labels were used as supplied; no person reviewed outputs.
 
-Initial recording failed because its script supplied 0.8 to the integer 0-100
-opacity control; corrected to 80. A light Python suite was mistakenly started
-while this checkout's demo occupied port 8111; occupied-port tests failed. These
-are orchestration failures, not passed checks. Rerun the complete verification
-after stopping the recorded demo. Evidence logs stay under `.runtime/`.
+Report JSON SHA256:
+`21ce82658cd7927b9e551cfd524273e7eca4860ae9aecc99cbfcc18f0407aa50`.
+Source CSV SHA256:
+`a48557e6033318cb90556f706196bc9d247a776a23ea51aecee5a80dd0332995`.
+Dataset licence SHA256:
+`9e5f1b3c610b9c2da5c313bf81d577a7d1acec686bdb0384edefa6df0f90cd94`.
+Canonical acquisition identity:
+`f17594529872d92bdec929cdd4179462d94d1c40ea222dc5e61d705204697c17`.
+Strict validation pins the complete source/selection/input hashes and rejects
+source, membership, label, partition or mask reassignment.
+
+The [38.32-second recording](demo/walkthrough.mp4) is actual plate API inference
+on procedural inputs. It shows overlay changes, uncertainty, a scripted correction
+and persistence after reload. It is H.264, 1280x1400, 996692 bytes, no audio, with
+caption transcript and input/model/script hashes in `demo/walkthrough.json`.
+Video SHA256: `5835e5e593d39a39c7d6532a5a4426617e90c03aed6e43c9d0f7d0fd0f93ad76`.
+Four sampled frames were inspected automatically; the script asserted fresh jobs,
+overlays, blur suppression and saved correction history. No responses were mocked.
+
+`uv run python scripts/verify.py --fixture-only` passed all 15 commands after the
+review fixes: **96 Python tests**, strict Pyright (0 errors), Ruff/format,
+frontend lint and strict TypeScript including recording scripts, **11 Vitest**,
+production build, **6 actual-API Playwright** and **1 restart scenario**. The one
+legacy real-model test is deliberately deselected by this command; the actual
+new pretrained comparison ran separately under the lease. No local test skipped
+the optional packaging regression: Node, FFmpeg and FFprobe were present.
+
+Commands and local evidence:
+
+- `uv run python scripts/acquire_photographs.py` acquired the selected source
+  files by bounded HTTP ranges; `.runtime/photo-acquisition.log`. Fresh checkout
+  defaults now place source evidence in `.runtime/visa-candle-source`, preserving
+  committed reports. Full acquisition was not repeated after pin enforcement;
+  current validation rechecked all original file identities before inference.
+- `uv run --extra features python scripts/evaluate_photographs.py --weights
+  .runtime/models/weights/resnet18-f37072fd.pth` completed the corrected comparison;
+  `.runtime/photo-comparison-verified.log` and `.runtime/visa-candle-dev-v1/report.json`.
+  The curated report is an unchanged byte copy. The model child exited before
+  lease release; the machine lease was absent afterwards.
+- `node web/demo/record.mts` and `node web/demo/package.mts` exercised the real
+  browser and encoder; `.runtime/demo-published-record.log`,
+  `.runtime/demo-reviewed-package.log`. FFprobe confirmed the stream and duration.
+- `uv run pytest tests/unit/test_photographs.py tests/unit/test_photo_evaluation.py
+  tests/integration/test_demo_packaging.py -q` passed 28 focused regressions.
+- Final verification: `.runtime/portfolio-final-verification.log` and
+  `.runtime/verification.json`, all command exit statuses 0. Initial green run:
+  `.runtime/portfolio-pass-verification.log` (79 Python tests before review cases).
+- `uv run python scripts/evaluate_photographs.py --weights
+  .runtime/models/weights/resnet18-f37072fd.pth --final` exits **2**, explicitly
+  refusing unknown physical specimen/session groups before model loading.
+
+Initial failures are retained, not relabelled as passes: the first recording used
+0.8 on an integer opacity slider (fixed to 80); two occupied-port Python tests
+failed because the demo was still serving (full rerun passed after shutdown);
+the first model comparison failed on a relative source path before report export
+(`.runtime/photo-comparison.log`). Review regressions caught first-development
+warmup abort, incomplete source validation and paired JSON overwrite. All were
+fixed RED-to-GREEN. The independent automated review and audit are in
+[PHOTO-REVIEW.md](PHOTO-REVIEW.md); no deferred findings remain.
+
+The review exposed a backend-specific thread issue: positive OpenCV requests are
+ignored by this macOS GCD build. The new adapter disables parallelism and verifies
+reported count 1 before both methods. Original plate source and frozen procedural
+reports are unchanged; their old timings are observed process measurements,
+not verified single-thread OpenCV results. EVALUATION records this correction.
+
+Remaining evidence limits: physical specimen/session identities are absent, so
+specimen-separated final evaluation and specimen bootstrap remain blocked. No
+owned-photo pilot, human output/annotation review, industrial validation or
+screen-reader audit ran. The independent reviewer checked pixel aggregates but
+could not recompute individual pixel metrics without retained heatmaps. No model
+was rerun by the reviewer. New measurements require new output paths.
 
 Defect Lens v1 implements all ten tasks in the [original execution record](EXECUTION-RECORD.md). A subsequent independent publication review found two Important defects; both are fixed with regressions. Its Minor decoder-contract discrepancy is documented and tested. See [PUBLICATION-REVIEW.md](PUBLICATION-REVIEW.md).
 
-## Current checks
+## Prior v1 checks
 
 `uv run python scripts/verify.py --fixture-only` passed all 15 commands after the publication fixes:
 

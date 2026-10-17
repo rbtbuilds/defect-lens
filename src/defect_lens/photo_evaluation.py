@@ -31,6 +31,10 @@ Heatmap = NDArray[np.float32]
 Scorer = Callable[[RgbFrame], Heatmap]
 
 
+def hash_sources(paths: Sequence[Path], root: Path) -> dict[str, str]:
+    return {str(path.resolve().relative_to(root.resolve())): file_hash(path) for path in paths}
+
+
 class PhotoPrediction(Contract):
     source_image: str
     truth: str
@@ -171,6 +175,7 @@ def compare(
 ) -> None:
     if lease_token is None or not token_matches(DEFAULT_LEASE, lease_token):
         raise LeaseBusy("Photographic comparison requires the matching owned machine lease")
+    cv2.setNumThreads(0)
     manifest_path = root / "manifest.json"
     manifest = PhotoManifest.model_validate_json(manifest_path.read_bytes())
     validate_photos(manifest, root)
@@ -189,7 +194,10 @@ def compare(
     for method in ["difference", "resnet18_patch"]:
         started = time.perf_counter_ns()
         scorer = build_scorer(method, fit, weights)
-        first = load_photo(contained(root, development[0].image_path))
+        cv2.setNumThreads(0)
+        if cv2.getNumThreads() != 1:
+            raise RuntimeError("OpenCV sequential execution could not be verified")
+        first = fit[0]
         full_image_score(scorer(first))
         cold_ms = (time.perf_counter_ns() - started) / 1e6
         for _ in range(3):
@@ -216,12 +224,13 @@ def compare(
         "protocol_sha256": manifest.protocol_sha256,
         "manifest_sha256": file_hash(manifest_path),
         "weights_sha256": file_hash(weights),
-        "source_hashes": {str(p.relative_to(Path.cwd())): file_hash(p) for p in source_paths},
+        "source_hashes": hash_sources(source_paths, Path.cwd()),
         "lock_hashes": {
             name: file_hash(Path(name)) for name in ["uv.lock", "web/package-lock.json"]
         },
         "environment": {
             **environment(),
+            "opencv_reported_threads": cv2.getNumThreads(),
             "torch": version("torch"),
             "torchvision": version("torchvision"),
         },

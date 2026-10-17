@@ -10,6 +10,7 @@ from defect_lens.photographs import (
     PhotoSample,
     fetch_members,
     read_range,
+    validate_photo_source,
     validate_photos,
 )
 
@@ -93,13 +94,48 @@ def test_public_photos_cannot_claim_owned_or_confirmed_specimens() -> None:
 
 
 def test_validation_rejects_hash_tampering_and_overlap(tmp_path: Path) -> None:
-    (tmp_path / "image.jpg").write_bytes(b"changed")
-    manifest = PhotoManifest(protocol_sha256="b" * 64, samples=[sample("image.jpg")])
+    manifest = PhotoManifest.model_validate_json(
+        Path("reports/visa-candle-dev-v1/manifest.json").read_bytes()
+    )
+    first = manifest.samples[0]
+    destination = tmp_path / first.image_path
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(b"changed")
     with pytest.raises(ValueError, match="hash"):
         validate_photos(manifest, tmp_path)
-    manifest.samples.append(sample("image.jpg", "development"))
+    manifest.samples.append(first.model_copy(update={"partition": "development"}))
     with pytest.raises(ValueError, match="overlap|duplicate"):
         validate_photos(manifest, tmp_path)
+
+
+@pytest.mark.parametrize(
+    "field", ["upstream_revision", "archive_url", "archive_etag", "csv_sha256", "license_sha256"]
+)
+def test_changed_source_identity_cannot_claim_frozen_protocol(field: str) -> None:
+    manifest = PhotoManifest.model_validate_json(
+        Path("reports/visa-candle-dev-v1/manifest.json").read_bytes()
+    )
+    with pytest.raises(ValueError, match="source|selection"):
+        validate_photo_source(manifest.model_copy(update={field: "changed"}))
+
+
+@pytest.mark.parametrize("change", ["removed", "partition", "label", "upstream_split", "mask"])
+def test_changed_membership_or_labels_cannot_claim_frozen_protocol(change: str) -> None:
+    manifest = PhotoManifest.model_validate_json(
+        Path("reports/visa-candle-dev-v1/manifest.json").read_bytes()
+    )
+    if change == "removed":
+        manifest.samples.pop()
+    else:
+        updates = {
+            "partition": {"partition": "development"},
+            "label": {"label": "defect"},
+            "upstream_split": {"upstream_split": "test"},
+            "mask": {"mask_path": "unrelated.png"},
+        }
+        manifest.samples[0] = manifest.samples[0].model_copy(update=updates[change])
+    with pytest.raises(ValueError, match="source|selection"):
+        validate_photo_source(manifest)
 
 
 def test_final_evaluation_refuses_unverified_physical_groups(tmp_path: Path) -> None:

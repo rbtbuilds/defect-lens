@@ -1,6 +1,19 @@
 # Local runbook
 
-Run every command from this repository's Git root. Python is 3.12 via uv; CI uses Node 24. This Mac uses Node 26.7.0, tested against Vite's >=22.12 engine requirement because no Node 24 manager was available. Dependencies are local and locked. Numeric limits apply within these processes before library imports: BLAS/OpenCV threads 1; the CPU feature encoder uses torch threads 2. No global runtime changes or cloud keys are needed.
+Run every command from this repository's Git root. Python is 3.12 via uv; CI uses Node 24. This Mac uses Node 26.7.0, tested against Vite's >=22.12 engine requirement because no Node 24 manager was available. Dependencies are local and locked. Processes request BLAS environment limits of 1 and the CPU feature encoder uses torch threads 2. The original plate implementation's positive OpenCV thread request is not honored by the observed macOS GCD backend; see the timing-policy correction in EVALUATION.md. The separate photographic adapter disables OpenCV parallelism and verifies a reported count of 1. No global runtime changes or cloud keys are needed.
+
+## Photographic development and recorded demo
+
+The [public-photo report](../reports/visa-candle-dev-v1/report.md) gives exact
+acquisition/evaluation commands, pinned CC BY 4.0 terms and the distinction from
+the fixed-camera plate app. Source photographs stay under `.runtime/`; existing
+dataset/report paths are never overwritten. A busy shared ML lease refuses the
+comparison. Final specimen-separated evaluation is blocked by unavailable IDs.
+
+The [walkthrough](WALKTHROUGH.md) includes automated recording and MP4 packaging
+commands. FFmpeg/FFprobe are optional tools for recording; the application itself
+does not require them. The recording uses the running API and creates explicitly
+scripted correction entries. Stop owned servers after recording.
 
 ```bash
 uv sync --locked --extra features

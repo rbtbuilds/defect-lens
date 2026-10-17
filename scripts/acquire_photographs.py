@@ -9,7 +9,7 @@ from defect_lens.photographs import acquire
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path(".runtime/data/visa-candle"))
-    parser.add_argument("--evidence", type=Path, default=Path("reports/visa-candle-dev-v1"))
+    parser.add_argument("--evidence", type=Path, default=Path(".runtime/visa-candle-source"))
     args = parser.parse_args()
     manifest = acquire(args.output, args.evidence, Path("docs/PHOTO-PROTOCOL.md"))
     print(
