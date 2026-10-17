@@ -42,11 +42,11 @@ whether an example enters review. All 48 prediction rows are retained in the
 
 ## What the results mean
 
-Image classification alone would conceal a serious weakness: the difference
-method's localizations barely overlap the author masks, even after selecting
-its pixel threshold on these development masks. The pretrained method localizes
-more of the annotated pixels here but remains weak, and rejects one good image.
-Neither result supports deployment or transfer to the product's plate domain.
+Difference classifies all 24 development images correctly after threshold
+selection, while its mean defect-mask overlap is only 0.010465. Its score does
+little to locate the labelled defect, even after optimizing the pixel threshold
+on these masks. Pretrained patches reach 0.176416 overlap and reject one good
+image. These results do not support deployment or transfer to the plate domain.
 
 IoU uses a threshold optimized on the same 12 development defect masks. Pixel AP
 does not use that threshold. Both are averaged over defect images only, unlike
@@ -60,6 +60,8 @@ establish different physical specimens or sessions; related photographs may
 cross partitions. The small, lexicographically selected development set and
 same-set calibration further limit interpretation. Final specimen-separated
 evaluation refuses to run until credible grouping provenance is available.
+Development normals come from upstream train and defects from upstream test;
+this design cannot rule out acquisition differences that correlate with labels.
 
 ## Runtime and provenance
 

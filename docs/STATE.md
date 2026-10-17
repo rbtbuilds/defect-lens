@@ -10,7 +10,7 @@ defects from public VisA candle photographs. Official CC BY 4.0 terms, source CS
 4,226,496 bytes. No source photographs or weights are committed.
 
 The [report](../reports/visa-candle-dev-v1/report.md) contains actual difference and
-pretrained CPU inference, all 48 development predictions, errors, masks, thresholds,
+pretrained CPU inference, all 48 development predictions, errors, mask metrics, thresholds,
 review burden and runtime scope. Both have zero binary misses on the development
 threshold-selection set. Difference review is 7/24, mean defect IoU 0.010465;
 patch review is 6/24, IoU 0.176416, with one good-image false reject. Warm p95 is
@@ -89,6 +89,24 @@ owned-photo pilot, human output/annotation review, industrial validation or
 screen-reader audit ran. The independent reviewer checked pixel aggregates but
 could not recompute individual pixel metrics without retained heatmaps. No model
 was rerun by the reviewer. New measurements require new output paths.
+
+The independent committed-source clone check passed at
+`3d5fdb2139999546a219c7934919b5feba61f895`. Checkout
+`.runtime/clean-clone-6983b7171d` installed its own dependencies and source, then
+passed all 15 verification commands: 96 Python, 11 UI, 6 browser and 1 restart.
+All four install/verify commands exited 0. Evidence:
+`.runtime/clean-clone-evidence.json` and `.runtime/portfolio-clean-clone.log`.
+The uv warning about the inherited VIRTUAL_ENV was expected; the isolation proof
+confirms the clone's own prefix and package path. Subsequent edits clarify prose
+and record these results; inference code and frozen data are unchanged.
+
+Source/evidence commit `3d5fdb2139999546a219c7934919b5feba61f895` is published to
+the existing public repository's `main`, using the earlier explicit push
+authorization. It passed [GitHub CI on Ubuntu/Node 24](https://github.com/rbtbuilds/defect-lens/actions/runs/39062030810).
+The final documentation commit records that observed result; the workflow badge
+links the current run. No deployment, model upload, paid compute or external
+message occurred. Owned servers were stopped and ports 8111/5111 were free;
+the shared ML lease was left available after the model child exited.
 
 Defect Lens v1 implements all ten tasks in the [original execution record](EXECUTION-RECORD.md). A subsequent independent publication review found two Important defects; both are fixed with regressions. Its Minor decoder-contract discrepancy is documented and tested. See [PUBLICATION-REVIEW.md](PUBLICATION-REVIEW.md).
 

@@ -37,8 +37,8 @@ photograph. Reusing the plate registration or border crop would discard relevant
 pixels and make its quality gates inappropriate. Both the median-reference
 baseline and actual ResNet18 features use that same full-frame geometry.
 
-The important restriction is statistical. Published source paths identify
-images, not independently confirmed physical specimens or acquisition sessions.
+Published source paths identify images without establishing independent physical
+specimens or acquisition sessions.
 The [photo protocol](PHOTO-PROTOCOL.md) freezes selection and methods before
 fitting, and refuses final evaluation without those groups. Development
 diagnostics calibrate and measure on the same development images, so their
@@ -46,12 +46,12 @@ numbers are resubstitution results. They can reveal failure behavior; they do
 not estimate performance on unseen physical objects. No person reviewed the
 outputs or supplied new annotations for this pass.
 
-The [measured diagnostic](../reports/visa-candle-dev-v1/report.md) illustrates why
-that restraint matters. Difference had no binary errors after development
+In the [measured diagnostic](../reports/visa-candle-dev-v1/report.md), difference
+had no binary errors after development
 threshold selection, yet mean defect-mask overlap was only 0.010. Pretrained
 patches reached 0.176 overlap and falsely rejected one of 12 good images. Neither
-is a strong localization result. Looking only at image-level accuracy would hide
-the weakness. Both preserve every prediction and error count; the report includes
+is a strong localization result. The classification and mask metrics need to be
+read together. Both preserve every prediction and error count; the report includes
 runtime scope, source/weight hashes and the known independence limitation.
 
 ## Uncertain inputs
