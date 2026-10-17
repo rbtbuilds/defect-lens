@@ -32,6 +32,9 @@ treated it as Important because it could destroy the only recording record.
 The packager refuses an existing MP4 or JSON. The subprocess regression
 `test_packager_preserves_existing_sidecar_when_video_is_absent` first reproduced
 actual overwrite, then passed with both the old sidecar and absent output intact.
+The CI variant uses a sentinel encoder to assert that encoding never starts
+when the sidecar exists. This removes FFmpeg/FFprobe as test dependencies;
+actual video conversion was separately exercised with the real tools.
 
 No fixes were re-reviewed. Regression tests and the full verification suite
 provide the post-fix evidence; see STATE for exact counts and commands.

@@ -41,8 +41,8 @@ review fixes: **96 Python tests**, strict Pyright (0 errors), Ruff/format,
 frontend lint and strict TypeScript including recording scripts, **11 Vitest**,
 production build, **6 actual-API Playwright** and **1 restart scenario**. The one
 legacy real-model test is deliberately deselected by this command; the actual
-new pretrained comparison ran separately under the lease. No local test skipped
-the optional packaging regression: Node, FFmpeg and FFprobe were present.
+new pretrained comparison ran separately under the lease. The packaging guard
+regression ran locally, and real encoding/probing also passed separately.
 
 Commands and local evidence:
 
@@ -98,11 +98,21 @@ All four install/verify commands exited 0. Evidence:
 `.runtime/clean-clone-evidence.json` and `.runtime/portfolio-clean-clone.log`.
 The uv warning about the inherited VIRTUAL_ENV was expected; the isolation proof
 confirms the clone's own prefix and package path. Subsequent edits clarify prose
-and record these results; inference code and frozen data are unchanged.
+and make the packaging guard test independent of encoder availability; inference
+code and frozen data are unchanged.
 
 Source/evidence commit `3d5fdb2139999546a219c7934919b5feba61f895` is published to
 the existing public repository's `main`, using the earlier explicit push
 authorization. It passed [GitHub CI on Ubuntu/Node 24](https://github.com/rbtbuilds/defect-lens/actions/runs/39062030810).
+That first hosted run had 95 Python passes, one packaging regression skipped
+because the encoder/probe pair was unavailable, and one real-model case
+deselected. The guard regression now requires Node only: a sentinel executable
+records any attempted encoding, which must never begin when provenance exists.
+Removing the guard reproduced that forbidden attempt RED-to-GREEN; all 96 Python
+tests and strict Pyright passed again locally. Logs:
+`.runtime/demo-ci-red.log`, `.runtime/portfolio-final-python.log` and
+`.runtime/portfolio-final-types.log`. Actual video conversion still uses FFmpeg;
+no inference or recorded output is substituted by this negative-path test.
 The final documentation commit records that observed result; the workflow badge
 links the current run. No deployment, model upload, paid compute or external
 message occurred. Owned servers were stopped and ports 8111/5111 were free;
